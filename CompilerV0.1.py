@@ -7,7 +7,7 @@ def main():
     keywords = []
     operators = []
     c = "s"
-    with open("C:\\Users\\Lowfa\\Documents\\test.txt") as f:
+    with open("test.txt") as f:
         while c!="eof":
             c = f.read(1)
             if not c and current_char<n:
@@ -21,13 +21,13 @@ def main():
             elif c and current_char>=n:
                 buffer2[current_char - n] = c
             current_char = current_char + 1
-    with open("C:\\Users\\Lowfa\\Documents\\keywords.txt") as f:
+    with open("keywords.txt") as f:
         while True:
             word = f.readline()
             if not word:
                 break
             keywords.append(word)
-    with open("C:\\Users\\Lowfa\\Documents\\operators.txt") as f:
+    with open("operators.txt") as f:
         while True:
             word = f.readline()
             if not word:
