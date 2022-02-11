@@ -1,5 +1,6 @@
 #remove whitespace from reading
 #move to next buffer after reading runs out of chars
+
 def main():
     current_char = 0
     n = 4096
@@ -39,12 +40,15 @@ def main():
     token = "null"
     lexeme = ""
     cnt = 0
+    prev = ""
     print("Printing keywords from buffer")
     while token != "eof":
         token = buffer1[cnt]
         if token != " " and token!="eof":
             lexeme = lexeme + token
         elif token == " " or token=="eof":
+            print("lexeme:" + lexeme)
+            print("prev:" + prev)
             if (lexeme in keywords):
                 print("keyword:" + lexeme)
             elif (lexeme in operators):
@@ -54,10 +58,12 @@ def main():
                     #Do nothing for right now
                     print("Do nothing for now")
                 elif lexeme not in symbol_table.values() and (prev not in keywords):
-                    print(lexeme)
+                    print("non idenfied lexeme:" + lexeme)
                 elif lexeme not in symbol_table.values() and (prev in keywords):
                     symbol_table[lexeme] = prev
+                    print("\nSymbol Table:")
                     print(symbol_table)
+                    print("")
 
                 #print(lexeme)
 
