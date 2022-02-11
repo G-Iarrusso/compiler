@@ -1,4 +1,4 @@
 int count = 1;
 string name = "Jack"; //bob
 //howdy
-count = count + 1;
+count = count + 0x021a;
