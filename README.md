@@ -9,7 +9,7 @@ Deliverables
 - [ ] String identification(1 line surrounded with "")
 - [ ] Comment identification
 - [ ] Error reporting
-- [ ] Symbol table
+- [x] Symbol table
 Notes
  - Identifying new identifyers (starts with a letter, has digits/underscore/letters)
  - Recognize things
