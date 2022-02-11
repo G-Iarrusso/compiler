@@ -1,4 +1,5 @@
 #remove whitespace from reading
+#move to next buffer after reading runs out of chars
 def main():
     current_char = 0
     n = 4096
@@ -23,24 +24,36 @@ def main():
             current_char = current_char + 1
     with open("C:\\Users\\Lowfa\\Documents\\keywords.txt") as f:
         while True:
-            word = f.readline()
+            word = f.readline().strip()
             if not word:
                 break
             keywords.append(word)
     with open("C:\\Users\\Lowfa\\Documents\\operators.txt") as f:
         while True:
-            word = f.readline()
+            word = f.readline().strip()
             if not word:
                 break
             operators.append(word)
 
     token = "null"
-    thing = ""
+    lexeme = ""
     cnt = 0
-    while cnt < len(buffer1) and buffer1[cnt]!="eof":
-        print(buffer1[cnt])
+    print("Printing keywords from buffer")
+    while token != "eof":
+        token = buffer1[cnt]
+        if token != " " and token!="eof":
+            lexeme = lexeme + token
+        elif token == " " or token=="eof":
+            if (lexeme in keywords):
+                print("keyword:" + lexeme)
+            elif (lexeme in operators):
+                print("operator:" + lexeme)
+            else:
+                print("Non Keyword identifier")
+            lexeme = ""
         cnt = cnt + 1
 
+        
 if __name__ == "__main__":
     main()
     
