@@ -7,6 +7,7 @@ def main():
     buffer2 = ["null"]*n
     keywords = []
     operators = []
+    symbol_table = {}
     c = "s"
     with open("test.txt") as f:
         while c!="eof":
@@ -49,7 +50,18 @@ def main():
             elif (lexeme in operators):
                 print("operator:" + lexeme)
             else:
-                print("Non Keyword identifier")
+                if lexeme in symbol_table.values():
+                    #Do nothing for right now
+                    print("Do nothing for now")
+                elif lexeme not in symbol_table.values() and (prev not in keywords):
+                    print(lexeme)
+                elif lexeme not in symbol_table.values() and (prev in keywords):
+                    symbol_table[lexeme] = prev
+                    print(symbol_table)
+
+                #print(lexeme)
+
+            prev = lexeme 
             lexeme = ""
         cnt = cnt + 1
 
