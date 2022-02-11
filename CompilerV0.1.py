@@ -1,13 +1,18 @@
 #remove whitespace from reading
 #move to next buffer after reading runs out of chars
+import re
+from tkinter import Variable
+
 
 def main():
+    variable_regex = re.compile("[a-zA-Z][0-9a-zA-Z_]*")
     current_char = 0
     n = 4096
     buffer1 = ["null"]*n
     buffer2 = ["null"]*n
     keywords = []
     operators = []
+    declarators=[]
     symbol_table = {}
     c = "s"
     with open("test.txt") as f:
@@ -30,6 +35,12 @@ def main():
             if not word:
                 break
             keywords.append(word)
+    with open("declarators.txt") as f:
+        while True:
+            word = f.readline().strip()
+            if not word:
+                break
+            declarators.append(word)
     with open("operators.txt") as f:
         while True:
             word = f.readline().strip()
@@ -46,11 +57,9 @@ def main():
     while token != "eof":
         token = buffer1[cnt]
         if token == "\n":
-           print("end of line")
            lexeme = ""
         elif  "//" in lexeme:
             lexeme = lexeme + token
-            print(lexeme)
         elif token != " " and token!="eof" and token!=";":
             lexeme = lexeme + token
         elif token == " " or token=="eof" or token== ";":
@@ -65,7 +74,12 @@ def main():
                 elif lexeme not in symbol_table.keys() and (prev not in keywords):
                     print("non idenfied lexeme:" + lexeme)
                 elif lexeme not in symbol_table.keys() and (prev in keywords):
-                    symbol_table[lexeme] = prev
+                    if prev in declarators and variable_regex.match(lexeme) != None:
+                        print("compare variables")
+                        print(lexeme)
+                        symbol_table[lexeme] = prev
+                    else:
+                        print("not a valid Variable")
                     print("\nSymbol Table:")
                     print(symbol_table.keys())
                     print("")
