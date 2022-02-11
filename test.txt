@@ -1,3 +1,3 @@
-int count = 1
-string name = "Jack"
-count = count + 1
+int count = 1;
+string name = "Jack";
+count = count + 1;

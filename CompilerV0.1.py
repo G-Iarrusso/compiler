@@ -23,6 +23,8 @@ def main():
                 buffer1[current_char] = c
             elif c and current_char>=n:
                 buffer2[current_char - n] = c
+            if c == "\n":
+                current_char = current_char - 1
             current_char = current_char + 1
     with open("keywords.txt") as f:
         while True:
@@ -42,11 +44,12 @@ def main():
     cnt = 0
     prev = ""
     print("Printing keywords from buffer")
+    print(buffer1[0:50])
     while token != "eof":
         token = buffer1[cnt]
-        if token != " " and token!="eof":
+        if token != " " and token!="eof" and token!=";":
             lexeme = lexeme + token
-        elif token == " " or token=="eof":
+        elif token == " " or token=="eof" or token== ";":
             print("lexeme:" + lexeme)
             print("prev:" + prev)
             if (lexeme in keywords):
@@ -54,19 +57,21 @@ def main():
             elif (lexeme in operators):
                 print("operator:" + lexeme)
             else:
-                if lexeme in symbol_table.values():
+                if lexeme in symbol_table.keys():
                     #Do nothing for right now
+                    
                     print("Do nothing for now")
-                elif lexeme not in symbol_table.values() and (prev not in keywords):
+                elif lexeme not in symbol_table.keys() and (prev not in keywords):
                     print("non idenfied lexeme:" + lexeme)
-                elif lexeme not in symbol_table.values() and (prev in keywords):
+                elif lexeme not in symbol_table.keys() and (prev in keywords):
                     symbol_table[lexeme] = prev
                     print("\nSymbol Table:")
-                    print(symbol_table)
+                    print(symbol_table.keys())
                     print("")
 
                 #print(lexeme)
-
+            print("")
+            print("")
             prev = lexeme 
             lexeme = ""
         cnt = cnt + 1
