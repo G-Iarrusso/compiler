@@ -6,6 +6,9 @@ from tkinter import Variable
 
 def main():
     variable_regex = re.compile("[a-zA-Z][0-9a-zA-Z_]*")
+    integer_regex = re.compile("([0-9][0-9]*)|(0(x|X)[0-9a-fA-F][0-9a-fA-F]*)")
+    double_regex = re.compile("([0-9][0-9]*.[0-9]*)|([0-9][0-9]*.[0-9]*[eE][+-][0-9][0-9]*)")
+    string_regex = re.compile('".*"')
     current_char = 0
     n = 4096
     buffer1 = ["null"]*n
@@ -57,7 +60,7 @@ def main():
     while token != "eof":
         token = buffer1[cnt]
         if token == "\n":
-           lexeme = ""
+            lexeme = ""
         elif  "//" in lexeme:
             lexeme = lexeme + token
         elif token != " " and token!="eof" and token!=";":
@@ -71,15 +74,22 @@ def main():
                 if lexeme in symbol_table.keys():
                     #Do nothing for right now           
                     print("Do nothing for now")
-                elif lexeme not in symbol_table.keys() and (prev not in keywords):
-                    print("non idenfied lexeme:" + lexeme)
+                elif lexeme not in symbol_table.keys() and (prev not in keywords) and lexeme != "":
+                    if integer_regex.fullmatch(lexeme):
+                        print("integer lexeme:" + lexeme)
+                    elif double_regex.fullmatch(lexeme):
+                        print("double lexeme:" + lexeme)
+                    elif string_regex.fullmatch(lexeme):
+                        print("string lexeme:" + lexeme)
+                    else:
+                        print("non idenfied lexeme:" + lexeme)
                 elif lexeme not in symbol_table.keys() and (prev in keywords):
-                    if prev in declarators and variable_regex.match(lexeme) != None:
+                    if prev in declarators and variable_regex.fullmatch(lexeme) != None:
                         print("compare variables")
                         print(lexeme)
                         symbol_table[lexeme] = prev
                     else:
-                        print("not a valid Variable")
+                        print("not a valid Variable: "+ lexeme)
                     print("\nSymbol Table:")
                     print(symbol_table.keys())
                     print("")
