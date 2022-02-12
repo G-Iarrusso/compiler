@@ -1,4 +1,5 @@
 int count = 1;
 string name = "Jack"; //bob
-// howdy
-count = count + 1;
+//howdy
+count = count + 12.0;
+count = count + 0xa1;
