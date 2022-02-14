@@ -1,4 +1,4 @@
-int count = 1;
+int count = 1;/* hello */
 string name = "Jack"; //bob
 //howdy
 count = count + 12.0;
