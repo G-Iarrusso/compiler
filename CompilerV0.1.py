@@ -3,6 +3,20 @@
 import re
 from tkinter import Variable
 
+def parse(file):
+    arr = []
+    with open(file) as f:
+        while True:
+            word = f.readline().strip()
+            if not word:
+                break
+            arr.append(word)
+    return arr
+
+def determine_error(lexeme):
+    if lexeme[0] == '"' and lexeme[-1]!='"':
+        print("ERROR: Invalid String")
+    
 
 def main():
     variable_regex = re.compile("[a-zA-Z][0-9a-zA-Z_]*")
@@ -32,35 +46,21 @@ def main():
             elif c and current_char>=n:
                 buffer2[current_char - n] = c
             current_char = current_char + 1
-    with open("keywords.txt") as f:
-        while True:
-            word = f.readline().strip()
-            if not word:
-                break
-            keywords.append(word)
-    with open("declarators.txt") as f:
-        while True:
-            word = f.readline().strip()
-            if not word:
-                break
-            declarators.append(word)
-    with open("operators.txt") as f:
-        while True:
-            word = f.readline().strip()
-            if not word:
-                break
-            operators.append(word)
+    keywords = parse("keywords.txt")
+    declarators = parse("declarators.txt")
+    operators = parse("operators.txt")
 
     token = "null"
     lexeme = ""
     cnt = 0
     prev = ""
-    print("Printing keywords from buffer")
-    print(buffer1[0:50])
+    line_num = 0
+
     while token != "eof":
         token = buffer1[cnt]
         if token == "\n":
             lexeme = ""
+            line_num = line_num+1
         elif  "//" in lexeme:
             lexeme = lexeme + token
         elif token != " " and token!="eof" and token!=";":
@@ -71,9 +71,15 @@ def main():
             elif (lexeme in operators):
                 print("operator:" + lexeme)
             else:
+
+                #Know identifier if statements
+                #Most likely used in semantic analysis
                 if lexeme in symbol_table.keys():
                     #Do nothing for right now           
                     print("Do nothing for now")
+
+                #Unkonwn identifyer and previous was not a keyword
+                #Most likely two literals following each other
                 elif lexeme not in symbol_table.keys() and (prev not in keywords) and lexeme != "":
                     if integer_regex.fullmatch(lexeme):
                         print("integer lexeme:" + lexeme)
@@ -82,19 +88,22 @@ def main():
                     elif string_regex.fullmatch(lexeme):
                         print("string lexeme:" + lexeme)
                     else:
-                        print("non idenfied lexeme:" + lexeme)
+                        print("ERROR on line " + str(line_num))
+                        determine_error(lexeme)
+                
+                #New identifier 
                 elif lexeme not in symbol_table.keys() and (prev in keywords):
                     if prev in declarators and variable_regex.fullmatch(lexeme) != None:
                         print("compare variables")
                         print(lexeme)
                         symbol_table[lexeme] = prev
                     else:
-                        print("not a valid Variable: "+ lexeme)
+                        print("ERROR on line " + line_num)
+                        print("ERROR: not a valid Variable: "+ lexeme)
+
                     print("\nSymbol Table:")
                     print(symbol_table.keys())
                     print("")
-
-                #print(lexeme)
             prev = lexeme 
             lexeme = ""
         cnt = cnt + 1
