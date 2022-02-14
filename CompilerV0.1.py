@@ -54,7 +54,7 @@ def main():
     lexeme = ""
     cnt = 0
     prev = ""
-    line_num = 0
+    line_num = 1
 
     while token != "eof":
         token = buffer1[cnt]
@@ -121,6 +121,7 @@ def main():
             prev = lexeme 
             lexeme = ""
         cnt = cnt + 1
+    print(line_num)
         
 if __name__ == "__main__":
     main()
