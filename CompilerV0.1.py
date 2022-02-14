@@ -59,7 +59,19 @@ def main():
     print(buffer1[0:50])
     while token != "eof":
         token = buffer1[cnt]
-        if token == "\n":
+        if "/*"in lexeme:
+            if "*/" in lexeme:
+                print("done multi line comment")
+                lexeme = ""
+            elif token == "eof":
+                print("error no closing comment")
+            else:
+                lexeme = lexeme + token
+        elif token == "\n":
+            if "//" in lexeme:
+                print("comment complete")
+            elif lexeme != "":
+                print("error with lexeme:" + lexeme)
             lexeme = ""
         elif  "//" in lexeme:
             lexeme = lexeme + token
@@ -83,8 +95,8 @@ def main():
                         print("string lexeme:" + lexeme)
                     else:
                         print("non idenfied lexeme:" + lexeme)
-                elif lexeme not in symbol_table.keys() and (prev in keywords):
-                    if prev in declarators and variable_regex.fullmatch(lexeme) != None:
+                elif lexeme not in symbol_table.keys() and  prev in declarators:
+                    if variable_regex.fullmatch(lexeme) != None:
                         print("compare variables")
                         print(lexeme)
                         symbol_table[lexeme] = prev
