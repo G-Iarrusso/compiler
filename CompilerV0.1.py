@@ -3,6 +3,11 @@
 import re
 from tkinter import Variable
 
+output = open("error_log.txt", "w")
+output.write("Decaf Error Stack Trace")
+output.close()
+output = open("error_log.txt", "a")
+
 def parse(file):
     arr = []
     with open(file) as f:
@@ -13,11 +18,17 @@ def parse(file):
             arr.append(word)
     return arr
 
+def log_error(line):
+    print(line)
+    output.write(str(line))
+
 def determine_error(lexeme):
-    if lexeme[0] == '"' and lexeme[-1]!='"':
-        print("ERROR: Invalid String")
-    elif (lexeme[0].lower()=='o')and (lexeme[1].lower()=='x'):
-        print("ERROR: Invalid Integer")
+    if lexeme[0] == '"':
+        log_error("ERROR: Invalid String")
+    elif "." in lexeme:
+        log_error("ERROR: Invalid Double")
+    else:
+        log_error("ERROR: Invalid Integer")
 
     
 
@@ -35,6 +46,7 @@ def main():
     declarators=[]
     symbol_table = {}
     c = "s"
+
     with open("test.txt") as f:
         while c!="eof":
             c = f.read(1)
@@ -73,9 +85,9 @@ def main():
                 print("done multi line comment")
                 lexeme = ""
             elif token == "eof":
-                print("Error on line number: " + line_num)
-                print("ERROR origin: " + lines[line_num-1])
-                print("ERROR: no closing comment")
+                log_error("Error on line number: " + line_num)
+                log_error("ERROR origin: " + lines[line_num-1])
+                log_error("ERROR: no closing comment")
             elif token == "\n":
                 line_num = line_num + 1  
             else:
@@ -84,8 +96,8 @@ def main():
             if "//" in lexeme:
                 print("comment complete")
             elif lexeme != "":
-                print("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
-                print("ERROR with COMMENT:" + lexeme)
+                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
+                log_error("ERROR with COMMENT:" + lexeme)
             lexeme = ""
             line_num = line_num + 1
         elif  "//" in lexeme:
@@ -115,7 +127,7 @@ def main():
                     elif string_regex.fullmatch(lexeme):
                         print("string lexeme:" + lexeme)
                     else:
-                        print("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
+                        log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
                         determine_error(lexeme)
                 
                 #New identifier 
@@ -125,8 +137,8 @@ def main():
                         print(lexeme)
                         symbol_table[lexeme] = prev
                     else:
-                        print("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
-                        print("ERROR: not a valid Variable: "+ lexeme)
+                        log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
+                        log_error("ERROR: not a valid Variable: "+ lexeme)
 
                     print("\nSymbol Table:")
                     print(symbol_table.keys())
