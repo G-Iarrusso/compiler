@@ -4,7 +4,7 @@ import re
 from tkinter import Variable
 
 output = open("error_log.txt", "w")
-output.write("Decaf Error Stack Trace")
+output.write("Decaf Error Stack Trace\n")
 output.close()
 output = open("error_log.txt", "a")
 
@@ -19,11 +19,12 @@ def parse(file):
     return arr
 
 def log_error(line):
-    print(line)
-    output.write(str(line))
+    #print(line)
+    output.write(str(line)+"\n")
 
 def determine_error(lexeme):
-    if lexeme[0] == '"':
+    log_error("ERROR LEXEME IS: " + lexeme)
+    if not(lexeme[0] == '"' and lexeme[-1] == '"') and '"' in lexeme:
         log_error("ERROR: Invalid String")
     elif "." in lexeme:
         log_error("ERROR: Invalid Double")
@@ -84,12 +85,14 @@ def main():
             if "*/" in lexeme:
                 print("done multi line comment")
                 lexeme = ""
+                if token == "\n":
+                    line_num = line_num + 1
             elif token == "eof":
                 log_error("Error on line number: " + line_num)
                 log_error("ERROR origin: " + lines[line_num-1])
                 log_error("ERROR: no closing comment")
             elif token == "\n":
-                line_num = line_num + 1  
+                line_num = line_num + 1
             else:
                 lexeme = lexeme + token
         elif token == "\n":
@@ -97,7 +100,7 @@ def main():
                 print("comment complete")
             elif lexeme != "":
                 log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
-                log_error("ERROR with COMMENT:" + lexeme)
+                log_error("UNKNOWN ERROR:" + lexeme)
             lexeme = ""
             line_num = line_num + 1
         elif  "//" in lexeme:
@@ -110,11 +113,11 @@ def main():
             elif (lexeme in operators):
                 print("operator:" + lexeme)
             else:
-
                 #Know identifier if statements
                 #Most likely used in semantic analysis
                 if lexeme in symbol_table.keys():
-                    #Do nothing for right now           
+                    #Do nothing for right now
+                    print(lexeme)     
                     print("Do nothing for now")
 
                 #Unkonwn identifyer and previous was not a keyword
@@ -147,6 +150,7 @@ def main():
             lexeme = ""
         cnt = cnt + 1
     print(line_num)
+    print(lines)
         
 if __name__ == "__main__":
     main()
