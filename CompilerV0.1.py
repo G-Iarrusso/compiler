@@ -16,6 +16,9 @@ def parse(file):
 def determine_error(lexeme):
     if lexeme[0] == '"' and lexeme[-1]!='"':
         print("ERROR: Invalid String")
+    elif (lexeme[0].lower()=='o')and (lexeme[1].lower()=='x'):
+        print("ERROR: Invalid Integer")
+
     
 
 def main():
@@ -46,6 +49,9 @@ def main():
             elif c and current_char>=n:
                 buffer2[current_char - n] = c
             current_char = current_char + 1
+    code = open('test.txt')
+    lines = code.readlines()
+
     keywords = parse("keywords.txt")
     declarators = parse("declarators.txt")
     operators = parse("operators.txt")
@@ -57,13 +63,19 @@ def main():
     line_num = 1
 
     while token != "eof":
-        token = buffer1[cnt]
+        if cnt<len(buffer1):
+            token = buffer1[cnt]
+        if cnt>=len(buffer1):
+            token = buffer2[cnt-4096]
+        
         if "/*"in lexeme:
             if "*/" in lexeme:
                 print("done multi line comment")
                 lexeme = ""
             elif token == "eof":
-                print("error no closing comment")
+                print("Error on line number: " + line_num)
+                print("ERROR origin: " + lines[line_num-1])
+                print("ERROR: no closing comment")
             elif token == "\n":
                 line_num = line_num + 1  
             else:
@@ -72,7 +84,8 @@ def main():
             if "//" in lexeme:
                 print("comment complete")
             elif lexeme != "":
-                print("error with lexeme:" + lexeme)
+                print("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
+                print("ERROR with COMMENT:" + lexeme)
             lexeme = ""
             line_num = line_num + 1
         elif  "//" in lexeme:
@@ -102,7 +115,7 @@ def main():
                     elif string_regex.fullmatch(lexeme):
                         print("string lexeme:" + lexeme)
                     else:
-                        print("ERROR on line " + str(line_num))
+                        print("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
                         determine_error(lexeme)
                 
                 #New identifier 
@@ -112,7 +125,7 @@ def main():
                         print(lexeme)
                         symbol_table[lexeme] = prev
                     else:
-                        print("ERROR on line " + line_num)
+                        print("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
                         print("ERROR: not a valid Variable: "+ lexeme)
 
                     print("\nSymbol Table:")
