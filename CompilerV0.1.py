@@ -20,8 +20,8 @@ def determine_error(lexeme):
 
 def main():
     variable_regex = re.compile("[a-zA-Z][0-9a-zA-Z_]*")
-    integer_regex = re.compile("([0-9][0-9]*)|(0(x|X)[0-9a-fA-F][0-9a-fA-F]*)")
-    double_regex = re.compile("([0-9][0-9]*.[0-9]*)|([0-9][0-9]*.[0-9]*[eE][+-][0-9][0-9]*)")
+    integer_regex = re.compile("(-)?(([0-9]+)|(0(x|X)[0-9a-fA-F]+))")
+    double_regex = re.compile("(-)?(([0-9]+.[0-9]*)|([0-9]+.[0-9]*[eE][+-][0-9]+))")
     string_regex = re.compile('".*"')
     current_char = 0
     n = 4096
