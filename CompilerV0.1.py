@@ -28,8 +28,10 @@ def determine_error(lexeme):
         log_error("ERROR: Invalid String")
     elif "." in lexeme:
         log_error("ERROR: Invalid Double")
-    else:
+    elif not lexeme.isnumeric():
         log_error("ERROR: Invalid Integer")
+    else:
+        log_error("UNKNOWN ERROR")
 
     
 
@@ -47,6 +49,41 @@ def main():
     declarators=[]
     symbol_table = {}
     c = "s"
+
+    def handle_lexeme():
+        #Know identifier if statements
+        #Most likely used in semantic analysis
+        if lexeme in symbol_table.keys():
+            #Do nothing for right now
+            print(lexeme)     
+            print("Do nothing for now")
+        #Unkonwn identifyer and previous was not a keyword
+        #Most likely two literals following each other
+        elif lexeme not in symbol_table.keys() and (prev not in keywords) and lexeme != "":
+            if integer_regex.fullmatch(lexeme):
+                print("integer lexeme:" + lexeme)
+            elif double_regex.fullmatch(lexeme):
+                print("double lexeme:" + lexeme)
+            elif string_regex.fullmatch(lexeme):
+                print("string lexeme:" + lexeme)
+            else:
+                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
+                determine_error(lexeme)
+        
+        #New identifier 
+        elif lexeme not in symbol_table.keys() and  prev in declarators:
+            if variable_regex.fullmatch(lexeme) != None:
+                print("compare variables")
+                print(lexeme)
+                symbol_table[lexeme] = prev
+            else:
+                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
+                log_error("ERROR: not a valid Variable: "+ lexeme)
+
+            print("\nSymbol Table:")
+            print(symbol_table.keys())
+            print("")
+
 
     with open("test.txt") as f:
         while c!="eof":
@@ -68,8 +105,10 @@ def main():
     keywords = parse("keywords.txt")
     declarators = parse("declarators.txt")
     operators = parse("operators.txt")
+    comments = parse("comments.txt")
 
     token = "null"
+    token2 = "null"
     lexeme = ""
     cnt = 0
     prev = ""
@@ -81,6 +120,21 @@ def main():
         if cnt>=len(buffer1):
             token = buffer2[cnt-4096]
         
+        if token in operators or token =="&" or token == "|" or token =="!":
+            if cnt<len(buffer1):
+                token2 = buffer1[cnt+1]
+            if cnt>=len(buffer1):
+                token2 = buffer2[cnt-4096+1]
+            if token2 in operators and (token + token2) in operators:
+                token = token + token2
+                cnt = cnt+1
+            elif (token2 == "/" or token2 == "*") and (token + token2) in comments:
+                cnt = cnt+1
+                token = token + token2
+            elif (token2 =="&" or token2 == "|")and (token + token2) in operators:
+                token = token + token2
+                cnt = cnt+1
+        # multi line comment handler
         if "/*"in lexeme:
             if "*/" in lexeme:
                 print("done multi line comment")
@@ -95,6 +149,7 @@ def main():
                 line_num = line_num + 1
             else:
                 lexeme = lexeme + token
+        #new line handler
         elif token == "\n":
             if "//" in lexeme:
                 print("comment complete")
@@ -103,51 +158,26 @@ def main():
                 log_error("UNKNOWN ERROR:" + lexeme)
             lexeme = ""
             line_num = line_num + 1
+        #comment handler
         elif  "//" in lexeme:
             lexeme = lexeme + token
-        elif token != " " and token!="eof" and token!=";":
-            lexeme = lexeme + token
+        #handle lexeme
         elif token == " " or token=="eof" or token== ";":
             if (lexeme in keywords):
                 print("keyword:" + lexeme)
+                prev = lexeme 
             elif (lexeme in operators):
                 print("operator:" + lexeme)
-            else:
-                #Know identifier if statements
-                #Most likely used in semantic analysis
-                if lexeme in symbol_table.keys():
-                    #Do nothing for right now
-                    print(lexeme)     
-                    print("Do nothing for now")
-
-                #Unkonwn identifyer and previous was not a keyword
-                #Most likely two literals following each other
-                elif lexeme not in symbol_table.keys() and (prev not in keywords) and lexeme != "":
-                    if integer_regex.fullmatch(lexeme):
-                        print("integer lexeme:" + lexeme)
-                    elif double_regex.fullmatch(lexeme):
-                        print("double lexeme:" + lexeme)
-                    elif string_regex.fullmatch(lexeme):
-                        print("string lexeme:" + lexeme)
-                    else:
-                        log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
-                        determine_error(lexeme)
-                
-                #New identifier 
-                elif lexeme not in symbol_table.keys() and  prev in declarators:
-                    if variable_regex.fullmatch(lexeme) != None:
-                        print("compare variables")
-                        print(lexeme)
-                        symbol_table[lexeme] = prev
-                    else:
-                        log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
-                        log_error("ERROR: not a valid Variable: "+ lexeme)
-
-                    print("\nSymbol Table:")
-                    print(symbol_table.keys())
-                    print("")
-            prev = lexeme 
+                prev = lexeme 
+            elif lexeme !="":
+                handle_lexeme()
+                prev = lexeme 
             lexeme = ""
+        elif token in operators:
+            handle_lexeme()
+            lexeme = ""
+        else:
+            lexeme = lexeme + token
         cnt = cnt + 1
     print(line_num)
     print(lines)
