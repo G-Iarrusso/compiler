@@ -1,6 +1,10 @@
-int count = -1;/* hello 
+
+int count = Ox123;/* hello 
 whee*/
-string name = "Jack"; //bob
+string name = "Jack; //bob
 //howdy
-count = count + -12.0;
+/* this is
+a test
+of the multi line*/ count = coun
+count = count + 12.o;
 count = count + 0xa1;

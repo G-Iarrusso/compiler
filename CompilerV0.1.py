@@ -3,6 +3,11 @@
 import re
 from tkinter import Variable
 
+output = open("error_log.txt", "w")
+output.write("Decaf Error Stack Trace\n")
+output.close()
+output = open("error_log.txt", "a")
+
 def parse(file):
     arr = []
     with open(file) as f:
@@ -13,9 +18,19 @@ def parse(file):
             arr.append(word)
     return arr
 
+def log_error(line):
+    #print(line)
+    output.write(str(line)+"\n")
+
 def determine_error(lexeme):
-    if lexeme[0] == '"' and lexeme[-1]!='"':
-        print("ERROR: Invalid String")
+    log_error("ERROR LEXEME IS: " + lexeme)
+    if not(lexeme[0] == '"' and lexeme[-1] == '"') and '"' in lexeme:
+        log_error("ERROR: Invalid String")
+    elif "." in lexeme:
+        log_error("ERROR: Invalid Double")
+    else:
+        log_error("ERROR: Invalid Integer")
+
     
 
 def main():
@@ -32,6 +47,7 @@ def main():
     declarators=[]
     symbol_table = {}
     c = "s"
+
     with open("test.txt") as f:
         while c!="eof":
             c = f.read(1)
@@ -46,6 +62,9 @@ def main():
             elif c and current_char>=n:
                 buffer2[current_char - n] = c
             current_char = current_char + 1
+    code = open('test.txt')
+    lines = code.readlines()
+
     keywords = parse("keywords.txt")
     declarators = parse("declarators.txt")
     operators = parse("operators.txt")
@@ -57,22 +76,31 @@ def main():
     line_num = 1
 
     while token != "eof":
-        token = buffer1[cnt]
+        if cnt<len(buffer1):
+            token = buffer1[cnt]
+        if cnt>=len(buffer1):
+            token = buffer2[cnt-4096]
+        
         if "/*"in lexeme:
             if "*/" in lexeme:
                 print("done multi line comment")
                 lexeme = ""
+                if token == "\n":
+                    line_num = line_num + 1
             elif token == "eof":
-                print("error no closing comment")
+                log_error("Error on line number: " + line_num)
+                log_error("ERROR origin: " + lines[line_num-1])
+                log_error("ERROR: no closing comment")
             elif token == "\n":
-                line_num = line_num + 1  
+                line_num = line_num + 1
             else:
                 lexeme = lexeme + token
         elif token == "\n":
             if "//" in lexeme:
                 print("comment complete")
             elif lexeme != "":
-                print("error with lexeme:" + lexeme)
+                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
+                log_error("UNKNOWN ERROR:" + lexeme)
             lexeme = ""
             line_num = line_num + 1
         elif  "//" in lexeme:
@@ -85,11 +113,11 @@ def main():
             elif (lexeme in operators):
                 print("operator:" + lexeme)
             else:
-
                 #Know identifier if statements
                 #Most likely used in semantic analysis
                 if lexeme in symbol_table.keys():
-                    #Do nothing for right now           
+                    #Do nothing for right now
+                    print(lexeme)     
                     print("Do nothing for now")
 
                 #Unkonwn identifyer and previous was not a keyword
@@ -102,7 +130,7 @@ def main():
                     elif string_regex.fullmatch(lexeme):
                         print("string lexeme:" + lexeme)
                     else:
-                        print("ERROR on line " + str(line_num))
+                        log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
                         determine_error(lexeme)
                 
                 #New identifier 
@@ -112,8 +140,8 @@ def main():
                         print(lexeme)
                         symbol_table[lexeme] = prev
                     else:
-                        print("ERROR on line " + line_num)
-                        print("ERROR: not a valid Variable: "+ lexeme)
+                        log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
+                        log_error("ERROR: not a valid Variable: "+ lexeme)
 
                     print("\nSymbol Table:")
                     print(symbol_table.keys())
@@ -122,6 +150,7 @@ def main():
             lexeme = ""
         cnt = cnt + 1
     print(line_num)
+    print(lines)
         
 if __name__ == "__main__":
     main()
