@@ -37,8 +37,8 @@ def determine_error(lexeme):
 
 def main():
     variable_regex = re.compile("[a-zA-Z][0-9a-zA-Z_]*")
-    integer_regex = re.compile("([0-9][0-9]*)|(0(x|X)[0-9a-fA-F][0-9a-fA-F]*)")
-    double_regex = re.compile("([0-9][0-9]*.[0-9]*)|([0-9][0-9]*.[0-9]*[eE][+-][0-9][0-9]*)")
+    integer_regex = re.compile("(-)?(([0-9]+)|(0(x|X)[0-9a-fA-F]+))")
+    double_regex = re.compile("(-)?(([0-9]+.[0-9]*)|([0-9]+.[0-9]*[eE][+-][0-9]+))")
     string_regex = re.compile('".*"')
     current_char = 0
     n = 4096
@@ -115,12 +115,11 @@ def main():
     line_num = 1
 
     while token != "eof":
-        print(lexeme)
         if cnt<len(buffer1):
             token = buffer1[cnt]
         if cnt>=len(buffer1):
             token = buffer2[cnt-4096]
-        # multi line comment handler
+        
         if token in operators or token =="&" or token == "|" or token =="!":
             if cnt<len(buffer1):
                 token2 = buffer1[cnt+1]
@@ -128,7 +127,6 @@ def main():
                 token2 = buffer2[cnt-4096+1]
             if token2 in operators and (token + token2) in operators:
                 token = token + token2
-                print(token)
                 cnt = cnt+1
             elif (token2 == "/" or token2 == "*") and (token + token2) in comments:
                 cnt = cnt+1
@@ -136,6 +134,7 @@ def main():
             elif (token2 =="&" or token2 == "|")and (token + token2) in operators:
                 token = token + token2
                 cnt = cnt+1
+        # multi line comment handler
         if "/*"in lexeme:
             if "*/" in lexeme:
                 print("done multi line comment")
@@ -166,16 +165,15 @@ def main():
         elif token == " " or token=="eof" or token== ";":
             if (lexeme in keywords):
                 print("keyword:" + lexeme)
+                prev = lexeme 
             elif (lexeme in operators):
                 print("operator:" + lexeme)
-            else:
+                prev = lexeme 
+            elif lexeme !="":
                 handle_lexeme()
-            prev = lexeme 
+                prev = lexeme 
             lexeme = ""
         elif token in operators:
-            print(token)
-            print(lexeme)
-            print("calling the boy")
             handle_lexeme()
             lexeme = ""
         else:
