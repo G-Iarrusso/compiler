@@ -28,8 +28,10 @@ def determine_error(lexeme):
         log_error("ERROR: Invalid String")
     elif "." in lexeme:
         log_error("ERROR: Invalid Double")
-    else:
+    elif not lexeme.isnumeric():
         log_error("ERROR: Invalid Integer")
+    else:
+        log_error("UNKNOWN ERROR")
 
     
 
@@ -103,6 +105,7 @@ def main():
     keywords = parse("keywords.txt")
     declarators = parse("declarators.txt")
     operators = parse("operators.txt")
+    comments = parse("comments.txt")
 
     token = "null"
     token2 = "null"
@@ -112,20 +115,27 @@ def main():
     line_num = 1
 
     while token != "eof":
+        print(lexeme)
         if cnt<len(buffer1):
             token = buffer1[cnt]
         if cnt>=len(buffer1):
             token = buffer2[cnt-4096]
         # multi line comment handler
-        if token in operators:
+        if token in operators or token =="&" or token == "|" or token =="!":
             if cnt<len(buffer1):
                 token2 = buffer1[cnt+1]
             if cnt>=len(buffer1):
                 token2 = buffer2[cnt-4096+1]
             if token2 in operators and (token + token2) in operators:
                 token = token + token2
-            elif token2 == "/" or token2 == "*":
+                print(token)
+                cnt = cnt+1
+            elif (token2 == "/" or token2 == "*") and (token + token2) in comments:
+                cnt = cnt+1
                 token = token + token2
+            elif (token2 =="&" or token2 == "|")and (token + token2) in operators:
+                token = token + token2
+                cnt = cnt+1
         if "/*"in lexeme:
             if "*/" in lexeme:
                 print("done multi line comment")
@@ -164,7 +174,10 @@ def main():
             lexeme = ""
         elif token in operators:
             print(token)
+            print(lexeme)
+            print("calling the boy")
             handle_lexeme()
+            lexeme = ""
         else:
             lexeme = lexeme + token
         cnt = cnt + 1
