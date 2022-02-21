@@ -1,5 +1,6 @@
 #remove whitespace from reading
 #move to next buffer after reading runs out of chars
+from cmath import log
 import re
 from tkinter import Variable
 
@@ -21,25 +22,13 @@ def parse(file):
 def log_error(line):
     #print(line)
     output.write(str(line)+"\n")
-
-def determine_error(lexeme, is_unknown=False):
-    log_error("ERROR LEXEME IS: " + lexeme)
-    if not(lexeme[0] == '"' and lexeme[-1] == '"') and '"' in lexeme:
-        log_error("ERROR: Invalid String")
-    elif "." in lexeme:
-        log_error("ERROR: Invalid Double")
-    elif is_unknown:
-        log_error("UNKNOWN ERROR")
-    elif not lexeme.isnumeric():
-        log_error("ERROR: Invalid Integer")
-
     
 
 def main():
     variable_regex = re.compile("[a-zA-Z][0-9a-zA-Z_]*")
     integer_regex = re.compile("(-)?(([0-9]+)|(0(x|X)[0-9a-fA-F]+))")
     double_regex = re.compile("(-)?(([0-9]+.[0-9]*)|([0-9]+.[0-9]*[eE][+-][0-9]+))")
-    string_regex = re.compile('".*"')
+    string_regex = re.compile('"[^"]*"')
     current_char = 0
     n = 4096
     buffer1 = ["null"]*n
@@ -48,7 +37,24 @@ def main():
     operators = []
     declarators=[]
     symbol_table = {}
+    bracket_stack =[]
+    open_bracket = {"(": "round","[": "square","{": "squigly"}
+    close_bracket = {")": "round","]": "square","}": "squigly"}
     c = "s"
+
+    def determine_error(is_unknown=False):
+        log_error("ERROR LEXEME IS: " + lexeme)
+        if not(lexeme[0] == '"' and lexeme[-1] == '"') and '"' in lexeme:
+            log_error("ERROR: Invalid String\n")
+        elif "." in lexeme:
+            log_error("ERROR: Invalid Double\n")
+        elif is_unknown:
+            log_error("UNKNOWN ERROR duplicate declaration\n")
+        elif lexeme not in symbol_table.keys():
+            log_error("UNKNOWN SYMBOL\n")
+        elif not lexeme.isnumeric():
+            log_error("ERROR: Invalid Integer\n")
+
 
     def handle_lexeme():
         #Know identifier if statements
@@ -56,13 +62,13 @@ def main():
         if lexeme in symbol_table.keys():
             #Do nothing for right now
             if prev == symbol_table[lexeme] or prev in declarators:
-                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
-                determine_error(lexeme,True)
+                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
+                determine_error(True)
             print(lexeme)     
             print("Do nothing for now")
         #Unkonwn identifyer and previous was not a keyword
         #Most likely two literals following each other
-        elif lexeme not in symbol_table.keys() and (prev not in keywords) and lexeme != "":
+        elif lexeme not in symbol_table.keys() and (prev not in keywords) and lexeme != "" :
             if integer_regex.fullmatch(lexeme):
                 print("integer lexeme:" + lexeme)
             elif double_regex.fullmatch(lexeme):
@@ -70,18 +76,18 @@ def main():
             elif string_regex.fullmatch(lexeme):
                 print("string lexeme:" + lexeme)
             else:
-                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
-                determine_error(lexeme)
+                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
+                determine_error()
         
         #New identifier 
-        elif lexeme not in symbol_table.keys() and  prev in declarators:
+        elif lexeme not in symbol_table.keys() and  prev in declarators and lexeme != "":
             if variable_regex.fullmatch(lexeme) != None:
                 print("compare variables")
                 print(lexeme)
                 symbol_table[lexeme] = prev
             else:
-                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
-                log_error("ERROR: not a valid Variable: "+ lexeme)
+                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
+                log_error("ERROR not a valid Variable: "+ lexeme)
 
             print("\nSymbol Table:")
             print(symbol_table.keys())
@@ -123,7 +129,7 @@ def main():
         if cnt>=len(buffer1):
             token = buffer2[cnt-4096]
         
-        if token in operators or token =="&" or token == "|" or token =="!":
+        if (token in operators or token =="&" or token == "|" or token =="!") and '"' not in lexeme:
             if cnt<len(buffer1):
                 token2 = buffer1[cnt+1]
             if cnt>=len(buffer1):
@@ -137,16 +143,25 @@ def main():
             elif (token2 =="&" or token2 == "|")and (token + token2) in operators:
                 token = token + token2
                 cnt = cnt+1
+            elif (token + token2) == "->":
+                token = token + token2
+                cnt = cnt+1
+                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
+                log_error("UNKNOWN SYMBOL:" + token)
+                lexeme = ""
+                token = ""
+
         # multi line comment handler
         if "/*"in lexeme:
             if "*/" in lexeme:
                 print("done multi line comment")
+                prev = lexeme 
                 lexeme = ""
                 if token == "\n":
                     line_num = line_num + 1
             elif token == "eof":
-                log_error("Error on line number: " + line_num)
-                log_error("ERROR origin: " + lines[line_num-1])
+                log_error("ERROR on line number: " + str(line_num))
+                log_error("ERROR origin: " + lines[line_num-1][:-1])
                 log_error("ERROR: no closing comment")
             elif token == "\n":
                 line_num = line_num + 1
@@ -157,15 +172,16 @@ def main():
             if "//" in lexeme:
                 print("comment complete")
             elif lexeme != "":
-                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
-                log_error("UNKNOWN ERROR:" + lexeme)
+                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
+                log_error("UNKNOWN ERROR broken line:" + lexeme)
+            prev = lexeme 
             lexeme = ""
             line_num = line_num + 1
         #comment handler
         elif  "//" in lexeme:
             lexeme = lexeme + token
         #handle lexeme
-        elif token == " " or token=="eof" or token== ";":
+        elif (token == " " and '"' not in lexeme)or token=="eof" or token== ";":
             if (lexeme in keywords):
                 print("keyword:" + lexeme)
                 prev = lexeme 
@@ -176,8 +192,14 @@ def main():
                 handle_lexeme()
                 prev = lexeme 
             lexeme = ""
-        elif token in operators:
+        elif token in operators and '"' not in lexeme:
             handle_lexeme()
+            prev = lexeme 
+            lexeme = ""
+        elif token == '"' and '"' in lexeme:
+            lexeme = lexeme +token
+            handle_lexeme()
+            prev = lexeme 
             lexeme = ""
         else:
             lexeme = lexeme + token

@@ -1,5 +1,1 @@
-int count;
-count = count+1;
-int count;
-string count;
-
+class Cat("Himalayan?Cat", "white", 3);
