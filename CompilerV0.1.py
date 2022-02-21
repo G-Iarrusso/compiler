@@ -22,16 +22,16 @@ def log_error(line):
     #print(line)
     output.write(str(line)+"\n")
 
-def determine_error(lexeme):
+def determine_error(lexeme, is_unkown=False):
     log_error("ERROR LEXEME IS: " + lexeme)
     if not(lexeme[0] == '"' and lexeme[-1] == '"') and '"' in lexeme:
         log_error("ERROR: Invalid String")
     elif "." in lexeme:
         log_error("ERROR: Invalid Double")
+    elif is_unkown:
+        log_error("UNKNOWN ERROR")
     elif not lexeme.isnumeric():
         log_error("ERROR: Invalid Integer")
-    else:
-        log_error("UNKNOWN ERROR")
 
     
 
@@ -55,6 +55,9 @@ def main():
         #Most likely used in semantic analysis
         if lexeme in symbol_table.keys():
             #Do nothing for right now
+            if prev == symbol_table[lexeme] or prev in declarators:
+                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1])
+                determine_error(lexeme,True)
             print(lexeme)     
             print("Do nothing for now")
         #Unkonwn identifyer and previous was not a keyword

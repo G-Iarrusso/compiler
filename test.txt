@@ -1,5 +1,5 @@
-
-int count !? 0x123;/* hello 
-whee*/
-string name = "Jack; //bob
+int count;
+count = count+1;
+int count;
+string count;
 
