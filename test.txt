@@ -1,1 +1,18 @@
-class Cat("Himalayan?Cat", "white", 3);
+class Cat {
+string breed;
+string color;
+int age;
+Cat() {
+self.breed = "unknown";
+self.color = "white";
+self.age = 0;
+}
+Cat(string breed, string color, int age) {
+self.breed = breed;
+self.color = color;
+self.age = age;
+}
+}
+// Instantiation
+Cat my_pet = Cat("Himalayan Cat", "white", 3);
+print(my_pet.color);
