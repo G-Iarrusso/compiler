@@ -1,3 +1,7 @@
+#Gianluca Iarrusso 170315920
+#John Barber-Ormerod 170148230
+#Phase 1 of CP 471 Project
+#2022-02-21
 #remove whitespace from reading
 #move to next buffer after reading runs out of chars
 from cmath import log
