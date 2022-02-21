@@ -22,13 +22,13 @@ def log_error(line):
     #print(line)
     output.write(str(line)+"\n")
 
-def determine_error(lexeme, is_unkown=False):
+def determine_error(lexeme, is_unknown=False):
     log_error("ERROR LEXEME IS: " + lexeme)
     if not(lexeme[0] == '"' and lexeme[-1] == '"') and '"' in lexeme:
         log_error("ERROR: Invalid String")
     elif "." in lexeme:
         log_error("ERROR: Invalid Double")
-    elif is_unkown:
+    elif is_unknown:
         log_error("UNKNOWN ERROR")
     elif not lexeme.isnumeric():
         log_error("ERROR: Invalid Integer")
