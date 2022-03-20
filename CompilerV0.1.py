@@ -41,6 +41,7 @@ def main():
     operators = []
     declarators=[]
     symbol_table = {}
+    read_order = []
     bracket_stack =[]
     open_bracket = {"(": "round","[": "square","{": "squigly"}
     close_bracket = {")": "round","]": "square","}": "squigly"}
@@ -68,17 +69,21 @@ def main():
             if prev == symbol_table[lexeme] or prev in declarators:
                 log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
                 determine_error(True)
-            print(lexeme)     
+            read_order.append([lexeme, symbol_table.get(lexeme)])
+            print(lexeme)
             print("Do nothing for now")
         #Unkonwn identifyer and previous was not a keyword
         #Most likely two literals following each other
         elif lexeme not in symbol_table.keys() and (prev not in keywords) and lexeme != "" :
             if integer_regex.fullmatch(lexeme):
                 print("integer lexeme:" + lexeme)
+                read_order.append([lexeme, "int"])
             elif double_regex.fullmatch(lexeme):
                 print("double lexeme:" + lexeme)
+                read_order.append([lexeme, "double"])
             elif string_regex.fullmatch(lexeme):
                 print("string lexeme:" + lexeme)
+                read_order.append([lexeme, "string"])
             else:
                 log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
                 determine_error()
@@ -89,6 +94,7 @@ def main():
                 print("compare variables")
                 print(lexeme)
                 symbol_table[lexeme] = prev
+                read_order.append([lexeme, symbol_table.get(lexeme)])
             else:
                 log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
                 log_error("ERROR not a valid Variable: "+ lexeme)
@@ -128,6 +134,7 @@ def main():
     line_num = 1
 
     while token != "eof":
+        print(lexeme)
         if cnt<len(buffer1):
             token = buffer1[cnt]
         if cnt>=len(buffer1):
@@ -185,12 +192,15 @@ def main():
         elif  "//" in lexeme:
             lexeme = lexeme + token
         #handle lexeme
-        elif (token == " " and '"' not in lexeme)or token=="eof" or token== ";":
+        elif (token == " " and '"' not in lexeme)or token=="eof" or token== ";" or token == ".":
+
             if (lexeme in keywords):
-                print("keyword:" + lexeme)
+                read_order.append([lexeme, "Keyword"])
+                if token == ".":
+                    read_order.append([token, "operator"])
                 prev = lexeme 
             elif (lexeme in operators):
-                print("operator:" + lexeme)
+                read_order.append([lexeme, "Operator"])
                 prev = lexeme 
             elif lexeme !="":
                 handle_lexeme()
@@ -198,6 +208,7 @@ def main():
             lexeme = ""
         elif token in operators and '"' not in lexeme:
             handle_lexeme()
+            read_order.append([token, "Operator"])
             prev = lexeme 
             lexeme = ""
         elif token == '"' and '"' in lexeme:
@@ -209,7 +220,7 @@ def main():
             lexeme = lexeme + token
         cnt = cnt + 1
     print(line_num)
-    print(lines)
+    print(read_order)
         
 if __name__ == "__main__":
     main()
