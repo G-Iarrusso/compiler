@@ -221,6 +221,7 @@ def main():
         cnt = cnt + 1
     print(line_num)
     print(read_order)
+    print(symbol_table)
         
 if __name__ == "__main__":
     main()
