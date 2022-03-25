@@ -205,6 +205,8 @@ def main():
             elif lexeme !="":
                 handle_lexeme()
                 prev = lexeme 
+            if token == ";":
+                read_order.append([";", "Operator"])
             lexeme = ""
         elif token in operators and '"' not in lexeme:
             handle_lexeme()
