@@ -5,6 +5,7 @@
 #remove whitespace from reading
 #move to next buffer after reading runs out of chars
 from cmath import log
+from queue import Empty
 import re
 from tkinter import Variable
 
@@ -134,7 +135,6 @@ def main():
     line_num = 1
 
     while token != "eof":
-        print(lexeme)
         if cnt<len(buffer1):
             token = buffer1[cnt]
         if cnt>=len(buffer1):
@@ -224,7 +224,162 @@ def main():
     print(line_num)
     print(read_order)
     print(symbol_table)
-        
+    
+    def parser(tokens):
+        expr_block_constant = [["Expr","=","LValue"],["LValue"],["Call"],["Expr","+","Expr"],["Expr","-","Expr"],["Expr","*","Expr"],["Expr","/","Expr"],["Expr","%","Expr"],["Expr","<","Expr"],["Expr","<=","Expr"],["Expr",">","Expr"],["Expr",">=","Expr"],["Expr","==","Expr"],["Expr","!=","Expr"],["Expr","&&","Expr"],["Expr","||","Expr"],["Constant"]]
+        expr_block = [["Expr","=","LValue"],["LValue"],["Call"],["Expr","+","Expr"],["Expr","-","Expr"],["Expr","*","Expr"],["Expr","/","Expr"],["Expr","%","Expr"],["Expr","<","Expr"],["Expr","<=","Expr"],["Expr",">","Expr"],["Expr",">=","Expr"],["Expr","==","Expr"],["Expr","!=","Expr"],["Expr","&&","Expr"],["Expr","||","Expr"]]
+        lval_block = [["ident",".","Expr"],["]","Expr","[","Expr"]]
+        call = [")","Actuals","(","ident",".","Expr"]
+        parse_table = [["terminals","ident","intConstant","doubleConstant","boolConstant","stringConstant","null","int","double","bool","string","class","void","interface","this","extends","implements","for","while","if","else","return","break","new","NewArray","Print","ReadInteger","ReadLine","true","false",";","&&","||","!",";",",",".","[","{","(","=","+","-","*","/","%","<=","==","!="],
+                    ["Program","Decl",None,None,None,None,None,"Decl","Decl","Decl","Decl","Decl","Decl","Decl"],
+                    ["Decl",[["VariableDecl"],["FunctionDecl"]],None,None,None,None,None,[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],"ClassDecl","FunctionDecl","InterfaceDecl"],
+                    ["VariableDecl",[";","Variable"],None,None,None,None,None,[";","Variable"],[";","Variable"],[";","Variable"],[";","Variable"]],
+                    ["Variable",["ident","Type"],None,None,None,None,None,["ident","Type"],["ident","Type"],["ident","Type"],["ident","Type"]],
+                    ["Type",[["]","[","Type"],["ident"]],None,None,None,None,None,[["int"],["ident","Type"]],[["double"],["ident","Type"]],[["bool"],["ident","Type"]],[["string"],["ident","Type"]]],
+                    ["FunctionDecl",["StmtBlock",")","Formals","(","ident","Type"],None,None,None,None,None,["StmtBlock",")","Formals","(","ident","Type"],["StmtBlock",")","Formals","(","ident","Type"],["StmtBlock",")","Formals","(","ident","Type"],["StmtBlock",")","Formals","(","ident","Type"],None,["StmtBlock",")","Formals","(","ident","void"]],
+                    ["Formals",[[",","Variable"],["Variable"]],None,None,None,None,None,[[",","Variable"],["Variable"]],[[",","Variable"],["Variable"]],[[",","Variable"],["Variable"]],[[",","Variable"],["Variable"]]],
+                    ["ClassDecl",None,None,None,None,None,None,None,None,None,None,["}","Field","{",",","ident","implements","ident","extends","ident","class"]],
+                    ["Field",[["VariableDecl"],["FunctionDecl"]],None,None,None,None,None,[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],None,"FunctionDecl"],
+                    ["Interface",None,None,None,None,None,None,None,None,None,None,None,None,["}","Prototype","{","ident","interface"]],
+                    ["Prototype",[";",")","Formals","(","ident","Type"],None,None,None,None,None,[";",")","Formals","(","ident","Type"],[";",")","Formals","(","ident","Type"],[";",")","Formals","(","ident","Type"],[";",")","Formals","(","ident","Type"],None,[";",")","Formals","(","ident","void"]],
+                    ["StmtBlock",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,["}","Stmt","VariableDecl","{"]],
+                    ["Stmt",[";","Expr"],[";","Expr"],[";","Expr"],[";","Expr"],[";","Expr"],None,None,None,None,None,None,None,None,[";","Expr"],None,None,"ForStmt","WhileStmt","IfStmt",None,"ReturnStmt","BreakStmt",[";","Expr"],[";","Expr"],"PrintStmt",[";","Expr"],[";","Expr"],None,None,None,None,None,[";","Expr"],None,None,None,None,["}","Stmt","VariableDecl","{"],[";","Expr"],None,None,[";","Expr"]],
+                    ["IfStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,["Stmt","else","Stmt",")","Expr","(","if"],None],
+                    ["WhileStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,["Stmt",")","Expr","(","while"]],
+                    ["ForStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,["Stmt",")","Expr",";","Expr",";","Expr","(","for"]],
+                    ["ReturnStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,[";","Expr","return"]],
+                    ["BreakStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,[";","break"]],
+                    ["PrintStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,[";",")",",","Expr","(","Print"]],
+                    ["Expr",expr_block,expr_block_constant,expr_block_constant,expr_block_constant,expr_block_constant,None,None,None,None,None,None,None,None,expr_block.append(["this"]),None,None,None,None,None,None,None,None,expr_block.append(["ident","new"]),expr_block.append([")","Type",",","Expr","(","NewArray"]),None,expr_block.append([")","(","ReadInteger"]),expr_block.append([")","(","ReadLine"]),None,None,None,None,None,expr_block.append(["Expr","!"]),None,None,None,None,None,expr_block.append([")","Expr","("]),None,None,expr_block.append(["Expr","-"])],
+                    ["LValue",lval_block.append("ident"),lval_block,lval_block,lval_block,lval_block,None,None,None,None,None,None,None,None,lval_block,None,None,None,None,None,None,None,None,lval_block,lval_block,None,lval_block,lval_block,None,None,None,None,None,lval_block,None,None,None,None,None,lval_block,None,None,lval_block],
+                    ["Call",[")","Actuals","(","ident"],call,call,call,call,None,None,None,None,None,None,None,None,call,None,None,None,None,None,None,None,None,call,call,None,call,call,None,None,None,None,None,call,None,None,None,None,call,None,None,call],
+                    ["Actuals",[",","Expr"],[",","Expr"],[",","Expr"],[",","Expr"],[",","Expr"],None,None,None,None,None,None,None,None,[",","Expr"],None,None,None,None,None,None,None,None,[",","Expr"],[",","Expr"],None,[",","Expr"],[",","Expr"],None,None,None,None,None,[",","Expr"],None,None,None,None,[",","Expr"],None,None,[",","Expr"]],
+                    ["Constant","intConstant","doubleConstant","boolConstant","stringConstant","null"]]
+        parser_stack =["Program"]
+        code_queue = tokens
+        code_queue_pointer = 0
+        parser_push_loc =[len(parser_stack)-1]
+        stars = [("Prototype", "InterfaceDecl"),("Field", "ClassDecl"),("VariableDecl", "StmtBlock"),("Stmt","StmtBlock")] #Tuple(thing with *, Thing producing it)
+        pluses = [("Decl", "Program"),("implements ident", "ClassDecl"),("Expr", "PrintStmt"),("Expr", "Actuals"),("Variable", "Formals")]
+        already_attempted =[]
+        already_handled= []
+        is_complete=0
+        bad_push =0
+        pushmode = 1
+        def parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode):
+            while not code_queue_pointer >= len(code_queue):
+                print("""\n\nNext iteration:\n"""+
+                    """Pushmode: """+ str(pushmode) +"\n"+
+                    """Looking for: """+ str(code_queue[code_queue_pointer])+"\n"+
+                    """Current parse stack """ + str(parser_stack) +"\n"+
+                    """Current parse locs """+ str(parser_push_loc) + "\n" +
+                    """Already tried """ + str(already_attempted))
+                if len(parser_stack)>12:
+                    break
+                if pushmode:
+                    """
+                    Pushing logic
+                    mini pop, if last item is a non terminal that doesn t have a + or * pop it and replace it with its production
+                    only push if the addition isnt in already tried
+                    is single item
+                        push it to stack
+                        update the parser loc
+                    is a list
+                        push it to stack
+                        update the parser loc
+                    is a list of lists
+                        for list in lists
+                            push to parser stack
+                            update stack loc
+                            parse ??? Need to flush out more
+                    if last item not terminal
+                        retain push mode
+                    if no good push:
+                        bad_push = 1
+                        pushmode = 0
+                    """
+                    pushmode = 0
+                    for row in range(0,len(parse_table)):
+                        for col in range(0,len(parse_table[row])):
+                            if (parse_table[row][col] != None) and (parser_stack[-1] in parse_table[row][col] or parser_stack[-1] == parse_table[row][col]) and parse_table[row][col] not in already_attempted:
+                                x = row
+                    #Find the column containing our terminal 
+                    if code_queue[0][0] in parse_table[0]:
+                        y = parse_table[0].index(code_queue[0][0])
+                    elif code_queue[0][0] in symbol_table.keys():
+                        y = 1
+                    transaction = parse_table[x][y]
+                    print("found transaction: "+ str(transaction) + " at " + str(x) + " "+str(y))
+                    if transaction not in already_attempted :
+                        already_attempted.append(transaction)
+                        #Check if there are multiple values to append
+                        print("pushloc value before:"+str(parser_push_loc))
+                        if isinstance(transaction, list):
+                            #Check if we're at a branching point
+                            if isinstance(transaction[0],list):
+                                print("list of lists")
+                                parser_stack.pop()
+                                parser_push_loc.pop()
+                                if len(parser_stack)>0:
+                                    parser_push_loc.append(len(parser_stack)-1)
+                                for components in transaction:
+                                    for component in components:
+                                        parser_stack.append(component)
+                                    parser_push_loc.append(len(parser_stack)-1)
+                            else:
+                                parser_stack.pop()
+                                parser_push_loc.pop()
+                                if len(parser_stack)>0:
+                                    parser_push_loc.append(len(parser_stack)-1)
+                                for component in transaction:
+                                    parser_stack.append(component)
+                                parser_push_loc.append(len(parser_stack)-1)
+                        else:
+                            parser_stack.pop()
+                            parser_push_loc.pop()
+                            if len(parser_stack)>0:
+                                parser_push_loc.append(len(parser_stack)-1)
+                            parser_stack.append(transaction)
+                            parser_push_loc.append(len(parser_stack)-1)
+                        print("pushloc value after:"+str(parser_push_loc))
+                        print("After itteration parser stack: " + str(parser_stack))
+                    else:
+                        bad_push = 1
+                    if parser_stack[-1] not in parse_table[0]:
+                        pushmode=1
+                else:  
+                    """
+                    Popping logic
+                    if bad_push:
+                        add push to already tried
+                        purge back to last push
+                        bad_push = 0
+                    if terminal not same trerminal in code
+                        bad_push=1
+                    if good pop
+                        pop latest
+                        update code queue pointer
+                        update parse stack loc
+                        clear already tried
+                    if next is terminal 
+                        retain pop mode
+                    """
+                    pushmode = 1
+                    if parser_stack[-1] != code_queue[code_queue_pointer][0] or not (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys()):
+                        bad_push = 1
+                    if bad_push:
+                        while len(parser_stack)>parser_push_loc[-1]:
+                            parser_stack.pop()
+                        parser_push_loc.pop
+                    elif parser_stack[-1] == code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys()):
+                        already_attempted=[]
+                        parser_stack.pop()
+                        code_queue_pointer = code_queue_pointer+1
+                    print(parser_stack)
+                    if parser_stack[-1] == code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys()):
+                        pushmode=0
+        parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode)            
+    parser(read_order)
 if __name__ == "__main__":
     main()
     
