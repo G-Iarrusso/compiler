@@ -11,4 +11,5 @@ this.age = 0;
 bobby = 15;
 tom = "scott
 */
-int keyword;
+int cock;
+string block;
