@@ -271,6 +271,7 @@ def main():
         pushmode = 1
         def parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode):
             cnt = 0
+            org_len = len(parser_stack)
             while not code_queue_pointer >= len(code_queue):
                 cnt = cnt +1
                 print("""\n\nNext iteration: """ + str(cnt) +"""\n"""+
@@ -348,6 +349,7 @@ def main():
                                         parser_stack.append(component)
                                     parser_push_loc.append(len(parser_stack)-1)
                                     outcome, code_queue_pointer=parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, 1)
+                                    print("Back from recursion")
                                     if outcome:
                                         print("Good Outcome")
                                         break
@@ -421,6 +423,8 @@ def main():
                         already_attempted=[]
                         parser_stack.pop()
                         parser_push_loc.pop()
+                        if len(parser_stack) -1 not in parser_push_loc:
+                            parser_push_loc.append(len(parser_stack)-1)
                         code_queue_pointer = code_queue_pointer + 1
                     elif parser_stack[-1] != code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] not in symbol_table.keys()):
                         bad_push = 1
@@ -428,6 +432,10 @@ def main():
                         if parser_stack[-1] == code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys()):
                             pushmode=0
                     print(parser_stack)
+                if len(parser_stack) < org_len:
+                    print("we finished the recursion")
+                    return 1, code_queue_pointer
+
             return 1, code_queue_pointer
         print("coutcome " + str(parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode)[0]))        
     parser(read_order)
