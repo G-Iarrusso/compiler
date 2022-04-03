@@ -230,14 +230,15 @@ def main():
         expr_block = [["Expr","=","LValue"],["LValue"],["Call"],["Expr","+","Expr"],["Expr","-","Expr"],["Expr","*","Expr"],["Expr","/","Expr"],["Expr","%","Expr"],["Expr","<","Expr"],["Expr","<=","Expr"],["Expr",">","Expr"],["Expr",">=","Expr"],["Expr","==","Expr"],["Expr","!=","Expr"],["Expr","&&","Expr"],["Expr","||","Expr"]]
         lval_block = [["ident",".","Expr"],["]","Expr","[","Expr"]]
         call = [")","Actuals","(","ident",".","Expr"]
-        parse_table = [["terminals","ident","intConstant","doubleConstant","boolConstant","stringConstant","null","int","double","bool","string","class","void","interface","this","extends","implements","for","while","if","else","return","break","new","NewArray","Print","ReadInteger","ReadLine","true","false",";","&&","||","!",";",",",".","[","{","(","=","+","-","*","/","%","<=","==","!="],
-                    ["Program","Decl",None,None,None,None,None,"Decl","Decl","Decl","Decl","Decl","Decl","Decl"],
-                    ["Decl",[["VariableDecl"],["FunctionDecl"]],None,None,None,None,None,[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],"ClassDecl","FunctionDecl","InterfaceDecl"],
-                    ["VariableDecl",[";","Variable"],None,None,None,None,None,[";","Variable"],[";","Variable"],[";","Variable"],[";","Variable"]],
+        parse_table = [["terminals","ident","intConstant","doubleConstant","boolConstant","stringConstant","null","int","double","bool","string","class","void","interface","this","extends","implements","for","while","if","else","return","break","new","NewArray","Print","ReadInteger","ReadLine","true","false",";","&&","||","!",",",".","[","{","(","=","+","-","*","/","%","<=","==","!=","/epsilon"],
+                    ["Program","Decl",None,None,None,None,None,"Decl","Decl","Decl","Decl","Decl","Decl","Decl",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["Decl",[["VariableDecl"],["FunctionDecl"]],None,None,None,None,None,[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],"ClassDecl","FunctionDecl","InterfaceDecl",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["VariableDecl",[";","Variable"],None,None,None,None,None,[";","Variable"],[";","Variable"],[";","Variable"],[";","Variable"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
                     ["Variable",["ident","Type"],None,None,None,None,None,["ident","Type"],["ident","Type"],["ident","Type"],["ident","Type"]],
-                    ["Type",[["]","[","Type"],["ident"]],None,None,None,None,None,[["int"],["ident","Type"]],[["double"],["ident","Type"]],[["bool"],["ident","Type"]],[["string"],["ident","Type"]]],
+                    ["Type",["Type'","ident"],None,None,None,None,None,["Type'","int"],["Type'","double"],["Type'","bool"],["Type'","string"]],
+                    ["Type'","/epsilon",None,None,None,None,None,"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,["Type'","]","["]],
                     ["FunctionDecl",["StmtBlock",")","Formals","(","ident","Type"],None,None,None,None,None,["StmtBlock",")","Formals","(","ident","Type"],["StmtBlock",")","Formals","(","ident","Type"],["StmtBlock",")","Formals","(","ident","Type"],["StmtBlock",")","Formals","(","ident","Type"],None,["StmtBlock",")","Formals","(","ident","void"]],
-                    ["Formals",[[",","Variable"],["Variable"]],None,None,None,None,None,[[",","Variable"],["Variable"]],[[",","Variable"],["Variable"]],[[",","Variable"],["Variable"]],[[",","Variable"],["Variable"]]],
+                    ["Formals",[[",","Variable"],["Variable"],["/epsilon"]],None,None,None,None,None,[[",","Variable"],["Variable"],["/epsilon"]],[[",","Variable"],["Variable"],["/epsilon"]],[[",","Variable"],["Variable"],["/epsilon"]],[[",","Variable"],["Variable"],["/epsilon"]]],
                     ["ClassDecl",None,None,None,None,None,None,None,None,None,None,["}","Field","{",",","ident","implements","ident","extends","ident","class"]],
                     ["Field",[["VariableDecl"],["FunctionDecl"]],None,None,None,None,None,[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],None,"FunctionDecl"],
                     ["Interface",None,None,None,None,None,None,None,None,None,None,None,None,["}","Prototype","{","ident","interface"]],
@@ -253,7 +254,7 @@ def main():
                     ["Expr",expr_block,expr_block_constant,expr_block_constant,expr_block_constant,expr_block_constant,None,None,None,None,None,None,None,None,expr_block.append(["this"]),None,None,None,None,None,None,None,None,expr_block.append(["ident","new"]),expr_block.append([")","Type",",","Expr","(","NewArray"]),None,expr_block.append([")","(","ReadInteger"]),expr_block.append([")","(","ReadLine"]),None,None,None,None,None,expr_block.append(["Expr","!"]),None,None,None,None,None,expr_block.append([")","Expr","("]),None,None,expr_block.append(["Expr","-"])],
                     ["LValue",lval_block.append("ident"),lval_block,lval_block,lval_block,lval_block,None,None,None,None,None,None,None,None,lval_block,None,None,None,None,None,None,None,None,lval_block,lval_block,None,lval_block,lval_block,None,None,None,None,None,lval_block,None,None,None,None,None,lval_block,None,None,lval_block],
                     ["Call",[")","Actuals","(","ident"],call,call,call,call,None,None,None,None,None,None,None,None,call,None,None,None,None,None,None,None,None,call,call,None,call,call,None,None,None,None,None,call,None,None,None,None,call,None,None,call],
-                    ["Actuals",[",","Expr"],[",","Expr"],[",","Expr"],[",","Expr"],[",","Expr"],None,None,None,None,None,None,None,None,[",","Expr"],None,None,None,None,None,None,None,None,[",","Expr"],[",","Expr"],None,[",","Expr"],[",","Expr"],None,None,None,None,None,[",","Expr"],None,None,None,None,[",","Expr"],None,None,[",","Expr"]],
+                    ["Actuals",[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],None,None,None,None,None,None,None,None,[[",","Expr"],["/epsilon"]],None,None,None,None,None,None,None,None,[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],None,[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],None,None,None,None,None,[[",","Expr"],["/epsilon"]],None,None,None,None,[[",","Expr"],["/epsilon"]],None,None,[[",","Expr"],["/epsilon"]]],
                     ["Constant","intConstant","doubleConstant","boolConstant","stringConstant","null"]]
         parser_stack =["Program"]
         code_queue = tokens
@@ -278,6 +279,7 @@ def main():
                     """Already tried """ + str(already_attempted) + "\n" +
                     """Length of the code queue """ + str(len(code_queue))+"\n"+
                     """Code queue pointer """ + str(code_queue_pointer) + "\n" +
+                    """Code Queue """ + str(code_queue[code_queue_pointer]) + "\n"+
                     """Bad Push """ + str(bad_push))
                 if pushmode:
                     """
@@ -394,6 +396,8 @@ def main():
                         retain pop mode
                     """
                     pushmode = 1
+                    if parser_stack[-1] == "/epsilon":
+                        parser_stack.pop()
                     if bad_push:
                         print("clensing the bad")
                         while len(parser_stack)>parser_push_loc[-2]+1:
