@@ -272,7 +272,7 @@ def main():
         def parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode):
             cnt = 0
             org_len = len(parser_stack)
-            while not code_queue_pointer >= len(code_queue):
+            while not code_queue_pointer >= len(code_queue) and cnt <30:
                 cnt = cnt +1
                 print("""\n\nNext iteration: """ + str(cnt) +"""\n"""+
                     """Pushmode: """+ str(pushmode) +"\n"+
@@ -306,23 +306,36 @@ def main():
                         bad_push = 1
                         pushmode = 0
                     """
+                    
                     pushmode = 0
                     leave_on = 0
-                    x =-1
+                    x = -1
+                    y = -1
+                    if parser_stack[-1] == "/epsilon":
+                        parser_stack.pop()
+                        parser_push_loc.pop()
+                        if len(parser_stack)>1:
+                            parser_push_loc.append(len(parser_stack)-1)
+                        continue
+                    if code_queue[code_queue_pointer][0] in parse_table[0]:
+                        y = parse_table[0].index(code_queue[code_queue_pointer][0])
+                    elif code_queue[0][0] in symbol_table.keys():
+                        y = 1
+
                     for row in range(0,len(parse_table)):
                         for col in range(0,len(parse_table[row])):
                             if parser_stack[-1] == parse_table[row][0] and parse_table[row][col] != None and parse_table[row][col] not in already_attempted:
                                 x = row
                                 break
                     #Find the column containing our terminal 
-                    if code_queue[code_queue_pointer][0] in parse_table[0]:
-                        y = parse_table[0].index(code_queue[code_queue_pointer][0])
-                    elif code_queue[0][0] in symbol_table.keys():
-                        y = 1
-                    if x == -1:
+
+                    if x == -1 or y == -1:
+                        print("We no good boys")
                         pushmode = 0
-                        break
+                        continue
                     transaction = parse_table[x][y]
+                    if transaction == None:
+                        print("We good boys")
                     print("found transaction: "+ str(transaction) + " at " + str(x) + " "+str(y))
                     if transaction not in already_attempted :
                         print("new transaction: "+ str(transaction))
@@ -342,16 +355,19 @@ def main():
                                 if not leave_on:
                                     parser_stack.pop()
                                     parser_push_loc.pop()
-                                    if len(parser_stack)>1:
+                                    if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
                                         parser_push_loc.append(len(parser_stack)-1)
                                 for components in transaction:
                                     for component in components:
                                         parser_stack.append(component)
                                     parser_push_loc.append(len(parser_stack)-1)
-                                    outcome, code_queue_pointer=parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, 1)
+                                    outcome, code_queue_pointer=parse(code_queue, code_queue_pointer, [parser_stack[-1]], [parser_push_loc[0], parser_push_loc[1]], already_attempted, bad_push, 1)
                                     print("Back from recursion")
                                     if outcome:
                                         print("Good Outcome")
+                                        parser_stack.pop()
+                                        parser_push_loc.pop()
+                                        already_attempted = []
                                         break
                             else:
                                 for item in pluses:
@@ -363,7 +379,7 @@ def main():
                                 if not leave_on:
                                     parser_stack.pop()
                                     parser_push_loc.pop()
-                                    if len(parser_stack)>1:
+                                    if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
                                         parser_push_loc.append(len(parser_stack)-1)
                                 for component in transaction:
                                     parser_stack.append(component)
@@ -378,7 +394,7 @@ def main():
                             if not leave_on:
                                 parser_stack.pop()
                                 parser_push_loc.pop()
-                                if len(parser_stack)>1:
+                                if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
                                     parser_push_loc.append(len(parser_stack)-1)
                             parser_stack.append(transaction)
                             parser_push_loc.append(len(parser_stack)-1)
@@ -411,11 +427,17 @@ def main():
                     pushmode = 1
                     if parser_stack[-1] == "/epsilon":
                         parser_stack.pop()
+                        parser_push_loc.pop()
+                        if len(parser_stack)>1:
+                            parser_push_loc.append(len(parser_stack)-1)
+                        continue
                     if bad_push:
                         print("clensing the bad")
-                        while len(parser_stack)>parser_push_loc[-2]+1:
-                            parser_stack.pop()
-                        parser_push_loc.pop()
+                        if len(parser_push_loc) > 1:
+                            while len(parser_stack)>parser_push_loc[-2]+1:
+                                parser_stack.pop()
+                        if not len(parser_push_loc) <= 1:
+                            parser_push_loc.pop()
                         already_attempted=[]
                         bad_push = 0
                     elif parser_stack[-1] == code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys()):
@@ -423,12 +445,12 @@ def main():
                         already_attempted=[]
                         parser_stack.pop()
                         parser_push_loc.pop()
-                        if len(parser_stack) -1 not in parser_push_loc:
+                        if len(parser_stack) - 1 not in parser_push_loc:
                             parser_push_loc.append(len(parser_stack)-1)
                         code_queue_pointer = code_queue_pointer + 1
                     elif parser_stack[-1] != code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] not in symbol_table.keys()):
                         bad_push = 1
-                    if code_queue_pointer < len(code_queue):
+                    if code_queue_pointer < len(code_queue) and len(parser_stack) > 0:
                         if parser_stack[-1] == code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys()):
                             pushmode=0
                     print(parser_stack)
