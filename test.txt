@@ -12,4 +12,6 @@ bobby = 15;
 tom = "scott
 */
 int cock;
-string block;
+void function_name ( int cocks){
+    int balls;
+}
