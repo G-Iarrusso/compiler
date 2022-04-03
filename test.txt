@@ -11,7 +11,4 @@ this.age = 0;
 bobby = 15;
 tom = "scott
 */
-int main () {
-    int cock;
-    string block;
-}
+int dude;
