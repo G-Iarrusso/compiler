@@ -3,3 +3,4 @@ double
 bool
 string
 class
+void

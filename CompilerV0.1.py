@@ -339,6 +339,9 @@ def main():
                                 for item in pluses:
                                     if item[1] == parser_stack[-1]:
                                         leave_on = 1
+                                for item in stars:
+                                    if item[1] == parser_stack[-1]:
+                                        leave_on = 1
                                 if not leave_on:
                                     parser_stack.pop()
                                     parser_push_loc.pop()
@@ -356,6 +359,9 @@ def main():
                                 for item in pluses:
                                     if item[1] == parser_stack[-1]:
                                         leave_on = 1
+                                for item in stars:
+                                    if item[1] == parser_stack[-1]:
+                                        leave_on = 1
                                 if not leave_on:
                                     parser_stack.pop()
                                     parser_push_loc.pop()
@@ -366,6 +372,9 @@ def main():
                                 parser_push_loc.append(len(parser_stack)-1)
                         else:
                             for item in pluses:
+                                if item[1] == parser_stack[-1]:
+                                    leave_on = 1
+                            for item in stars:
                                 if item[1] == parser_stack[-1]:
                                     leave_on = 1
                             if not leave_on:
@@ -415,6 +424,7 @@ def main():
                         print("Match found")
                         already_attempted=[]
                         parser_stack.pop()
+                        parser_push_loc.pop()
                         code_queue_pointer = code_queue_pointer + 1
                     elif parser_stack[-1] != code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] not in symbol_table.keys()):
                         bad_push = 1
