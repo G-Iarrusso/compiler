@@ -78,13 +78,13 @@ def main():
         elif lexeme not in symbol_table.keys() and (prev not in keywords) and lexeme != "" :
             if integer_regex.fullmatch(lexeme):
                 print("integer lexeme:" + lexeme)
-                read_order.append([lexeme, "int"])
+                read_order.append([lexeme, "intConstant"])
             elif double_regex.fullmatch(lexeme):
                 print("double lexeme:" + lexeme)
-                read_order.append([lexeme, "double"])
+                read_order.append([lexeme, "doubleConstant"])
             elif string_regex.fullmatch(lexeme):
                 print("string lexeme:" + lexeme)
-                read_order.append([lexeme, "string"])
+                read_order.append([lexeme, "stringConstant"])
             else:
                 log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
                 determine_error()
@@ -226,8 +226,8 @@ def main():
     print(symbol_table)
     
     def parser(tokens):
-        expr_block_constant = [["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'","Constant"]]
-        expr_block = [["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"]]
+        expr_block_constant = [["Expr'","Constant"],["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"]]
+        expr_block = [["Expr'","Expr","=","LValue"],["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"]]
         lval_block = [["ident",".","Expr"],["]","Expr","[","Expr"]]
         call = [")","Actuals","(","ident",".","Expr"]
         parse_table = [["terminals","ident","intConstant","doubleConstant","boolConstant","stringConstant","null","int","double","bool","string","class","void","interface","this","extends","implements","for","while","if","else","return","break","new","NewArray","Print","ReadInteger","ReadLine","true","false",";","&&","||","!",",",".","[","{","(","=","+","-","*","/","%","<",">","<=",">=","==","!=","/epsilon"],
@@ -253,10 +253,10 @@ def main():
                     ["PrintStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,[";",")",",","Expr","(","Print"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
                     ["Expr",expr_block,expr_block_constant,expr_block_constant,expr_block_constant,expr_block_constant,None,None,None,None,None,None,None,None,[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'","this"]],None,None,None,None,None,None,None,None,[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'","ident","new"]],[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'",")","Type",",","Expr","(","NewArray"]],None,[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'",")","(","ReadInteger"]],[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'",")","(","ReadLine"]],None,None,None,None,None,[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'","Expr","!"]],None,None,None,[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'",")","Expr","("]],None,None,[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'","Expr","-"]],None,None,None,None,None,None,None,None,None,None],
                     ["Expr'",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,[["Expr'","Expr","&&"],["/epsilon"]],[["Expr'","Expr","||"],["/epsilon"]],None,None,None,None,None,None,None,[["Expr'","Expr","+"],["/epsilon"]],[["Expr'","Expr","-"],["/epsilon"]],[["Expr'","Expr","*"],["/epsilon"]],[["Expr'","Expr","/"],["/epsilon"]],[["Expr'","Expr","%"],["/epsilon"]],[["Expr'","Expr","<"],["/epsilon"]],[["Expr'","Expr",">"],["/epsilon"]],[["Expr'","Expr","<="],["/epsilon"]],[["Expr'","Expr",">="],["/epsilon"]],[["Expr'","Expr","=="],["/epsilon"]],[["Expr'","Expr","!="],["/epsilon"]],None],
-                    ["LValue",[["ident",".","Expr"],["]","Expr","[","Expr"],["ident"]],lval_block,lval_block,lval_block,lval_block,None,None,None,None,None,None,None,None,lval_block,None,None,None,None,None,None,None,None,lval_block,lval_block,None,lval_block,lval_block,None,None,None,None,None,lval_block,None,None,None,None,lval_block,None,None,lval_block,None,None,None,None,None,None,None,None,None,None],
+                    ["LValue",[["ident"],["ident",".","Expr"],["]","Expr","[","Expr"]],lval_block,lval_block,lval_block,lval_block,None,None,None,None,None,None,None,None,lval_block,None,None,None,None,None,None,None,None,lval_block,lval_block,None,lval_block,lval_block,None,None,None,None,None,lval_block,None,None,None,None,lval_block,None,None,lval_block,None,None,None,None,None,None,None,None,None,None],
                     ["Call",[")","Actuals","(","ident"],call,call,call,call,None,None,None,None,None,None,None,None,call,None,None,None,None,None,None,None,None,call,call,None,call,call,None,None,None,None,None,call,None,None,None,None,call,None,None,call,None,None,None,None,None,None,None,None,None,None],
                     ["Actuals",[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],None,None,None,None,None,None,None,None,[[",","Expr"],["/epsilon"]],None,None,None,None,None,None,None,None,[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],None,[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],None,None,None,None,None,[[",","Expr"],["/epsilon"]],None,None,None,None,[[",","Expr"],["/epsilon"]],None,None,[[",","Expr"],["/epsilon"]],None,None,None,None,None,None,None,None,None,None],
-                    ["Constant","intConstant","doubleConstant","boolConstant","stringConstant","null",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None]]
+                    ["Constant",None, "intConstant","doubleConstant","boolConstant","stringConstant","null",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None]]
         parser_stack =["Program"]
         code_queue = tokens
         code_queue_pointer = 0
@@ -269,12 +269,11 @@ def main():
         bad_push =0
         pushmode = 1
         print(parse_table[23])
-        return
         def parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode):
             cnt = 0
             org_len = len(parser_stack)
             potential_pop = 0
-            while not code_queue_pointer >= len(code_queue) and cnt <30:
+            while not code_queue_pointer >= len(code_queue) and cnt <50:
                 cnt = cnt +1
                 print("""\n\nNext iteration: """ + str(cnt) +"""\n"""+
                     """Pushmode: """+ str(pushmode) +"\n"+
@@ -326,6 +325,9 @@ def main():
                         y = parse_table[0].index(code_queue[code_queue_pointer][0])
                     elif code_queue[code_queue_pointer][0] in symbol_table.keys():
                         y = 1
+                    elif code_queue[code_queue_pointer][1][-8:] == "Constant":
+                        print("In Constants")
+                        y = parse_table[0].index(code_queue[code_queue_pointer][1])
 
                     for item in pluses:
                         if item[1] == parser_stack[-1] and parser_stack[-1] != "Program" and ( code_queue[code_queue_pointer][0] in parse_table[0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys())):
@@ -478,6 +480,14 @@ def main():
                         if len(parser_stack) - 1 not in parser_push_loc:
                             parser_push_loc.append(len(parser_stack)-1)
                         code_queue_pointer = code_queue_pointer + 1
+                    elif code_queue[code_queue_pointer][1][-8:] == "Constant":
+                        print("Match found for Constant")
+                        already_attempted=[]
+                        parser_stack.pop()
+                        parser_push_loc.pop()
+                        if len(parser_stack) - 1 not in parser_push_loc:
+                            parser_push_loc.append(len(parser_stack)-1)
+                        code_queue_pointer = code_queue_pointer + 1
                     elif parser_stack[-1] != code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] not in symbol_table.keys()):
                         bad_push = 1
                     if code_queue_pointer < len(code_queue) and len(parser_stack) > 0:
@@ -487,7 +497,8 @@ def main():
                 if len(parser_stack) < org_len:
                     print("we finished the recursion")
                     return 1, code_queue_pointer
-
+            if cnt >=50:
+                return -1, code_queue_pointer
             return 1, code_queue_pointer
         print("coutcome " + str(parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode)[0]))        
     parser(read_order)
