@@ -253,7 +253,7 @@ def main():
                     ["PrintStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,[";",")",",","Expr","(","Print"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
                     ["Expr",expr_block,expr_block_constant,expr_block_constant,expr_block_constant,expr_block_constant,None,None,None,None,None,None,None,None,expr_block.append(["Expr'","this"]),None,None,None,None,None,None,None,None,expr_block.append(["Expr'","ident","new"]),expr_block.append(["Expr'",")","Type",",","Expr","(","NewArray"]),None,expr_block.append(["Expr'",")","(","ReadInteger"]),expr_block.append(["Expr'",")","(","ReadLine"]),None,None,None,None,None,expr_block.append(["Expr'","Expr","!"]),None,None,None,expr_block.append(["Expr'",")","Expr","("]),None,None,expr_block.append(["Expr'","Expr","-"]),None,None,None,None,None,None,None,None,None,None],
                     ["Expr'",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,[["Expr'","Expr","&&"],["/epsilon"]],[["Expr'","Expr","||"],["/epsilon"]],None,None,None,None,None,None,None,[["Expr'","Expr","+"],["/epsilon"]],[["Expr'","Expr","-"],["/epsilon"]],[["Expr'","Expr","*"],["/epsilon"]],[["Expr'","Expr","/"],["/epsilon"]],[["Expr'","Expr","%"],["/epsilon"]],[["Expr'","Expr","<"],["/epsilon"]],[["Expr'","Expr",">"],["/epsilon"]],[["Expr'","Expr","<="],["/epsilon"]],[["Expr'","Expr",">="],["/epsilon"]],[["Expr'","Expr","=="],["/epsilon"]],[["Expr'","Expr","!="],["/epsilon"]],None],
-                    ["LValue",lval_block.append("ident"),lval_block,lval_block,lval_block,lval_block,None,None,None,None,None,None,None,None,lval_block,None,None,None,None,None,None,None,None,lval_block,lval_block,None,lval_block,lval_block,None,None,None,None,None,lval_block,None,None,None,None,lval_block,None,None,lval_block,None,None,None,None,None,None,None,None,None,None],
+                    ["LValue",lval_block.append(["ident"]),lval_block,lval_block,lval_block,lval_block,None,None,None,None,None,None,None,None,lval_block,None,None,None,None,None,None,None,None,lval_block,lval_block,None,lval_block,lval_block,None,None,None,None,None,lval_block,None,None,None,None,lval_block,None,None,lval_block,None,None,None,None,None,None,None,None,None,None],
                     ["Call",[")","Actuals","(","ident"],call,call,call,call,None,None,None,None,None,None,None,None,call,None,None,None,None,None,None,None,None,call,call,None,call,call,None,None,None,None,None,call,None,None,None,None,call,None,None,call,None,None,None,None,None,None,None,None,None,None],
                     ["Actuals",[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],None,None,None,None,None,None,None,None,[[",","Expr"],["/epsilon"]],None,None,None,None,None,None,None,None,[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],None,[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],None,None,None,None,None,[[",","Expr"],["/epsilon"]],None,None,None,None,[[",","Expr"],["/epsilon"]],None,None,[[",","Expr"],["/epsilon"]],None,None,None,None,None,None,None,None,None,None],
                     ["Constant","intConstant","doubleConstant","boolConstant","stringConstant","null",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None]]
@@ -269,9 +269,12 @@ def main():
         is_complete=0
         bad_push =0
         pushmode = 1
+        print(parse_table[23])
+        return
         def parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode):
             cnt = 0
             org_len = len(parser_stack)
+            potential_pop = 0
             while not code_queue_pointer >= len(code_queue) and cnt <30:
                 cnt = cnt +1
                 print("""\n\nNext iteration: """ + str(cnt) +"""\n"""+
@@ -283,7 +286,9 @@ def main():
                     """Length of the code queue """ + str(len(code_queue))+"\n"+
                     """Code queue pointer """ + str(code_queue_pointer) + "\n" +
                     """Code Queue """ + str(code_queue[code_queue_pointer]) + "\n"+
-                    """Bad Push """ + str(bad_push))
+                    """Bad Push """ + str(bad_push)+ "\n"+
+                    """Potential pop""" + str(potential_pop)
+                    )
                 if pushmode:
                     """
                     Pushing logic
@@ -306,7 +311,8 @@ def main():
                         bad_push = 1
                         pushmode = 0
                     """
-                    
+                    lefty = parser_stack[-1]
+                    potential_pop = 0
                     pushmode = 0
                     leave_on = 0
                     x = -1
@@ -319,18 +325,29 @@ def main():
                         continue
                     if code_queue[code_queue_pointer][0] in parse_table[0]:
                         y = parse_table[0].index(code_queue[code_queue_pointer][0])
-                    elif code_queue[0][0] in symbol_table.keys():
+                    elif code_queue[code_queue_pointer][0] in symbol_table.keys():
                         y = 1
 
+                    for item in pluses:
+                        if item[1] == parser_stack[-1] and parser_stack[-1] != "Program" and ( code_queue[code_queue_pointer][0] in parse_table[0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys())):
+                            print("Potential pop plus")
+                            potential_pop = 1
+                    for item in stars:
+                        if item[1] == parser_stack[-1] and parser_stack[-1] != "Program" and ( code_queue[code_queue_pointer][0] in parse_table[0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys())):
+                            print("Potential pop plus")
+                            potential_pop = 1
+                    
                     for row in range(0,len(parse_table)):
                         for col in range(0,len(parse_table[row])):
-                            if parser_stack[-1] == parse_table[row][0] and parse_table[row][col] != None and parse_table[row][col] not in already_attempted:
+                            if parser_stack[-1] == parse_table[row][0] and parse_table[row][col] not in already_attempted:
                                 x = row
                                 break
                     #Find the column containing our terminal 
 
                     if x == -1 or y == -1:
                         print("We no good boys")
+                        print("x: "+ str(x))
+                        print("y: "+ str(y))
                         pushmode = 0
                         continue
                     transaction = parse_table[x][y]
@@ -339,7 +356,6 @@ def main():
                     print("found transaction: "+ str(transaction) + " at " + str(x) + " "+str(y))
                     if transaction not in already_attempted :
                         print("new transaction: "+ str(transaction))
-                        already_attempted.append(transaction)
                         #Check if there are multiple values to append
                         print("pushloc value before:"+str(parser_push_loc))
                         if isinstance(transaction, list):
@@ -353,6 +369,7 @@ def main():
                                     if item[1] == parser_stack[-1]:
                                         leave_on = 1
                                 if not leave_on:
+                                    potential_pop = 0
                                     parser_stack.pop()
                                     parser_push_loc.pop()
                                     if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
@@ -361,7 +378,7 @@ def main():
                                     for component in components:
                                         parser_stack.append(component)
                                     parser_push_loc.append(len(parser_stack)-1)
-                                    outcome, code_queue_pointer=parse(code_queue, code_queue_pointer, [parser_stack[-1]], [parser_push_loc[0], parser_push_loc[1]], already_attempted, bad_push, 1)
+                                    outcome, code_queue_pointer=parse(code_queue, code_queue_pointer, parser_stack[-len(components):], [parser_push_loc[0], parser_push_loc[1]], already_attempted, bad_push, 1)
                                     print("Back from recursion")
                                     if outcome:
                                         print("Good Outcome")
@@ -377,6 +394,7 @@ def main():
                                     if item[1] == parser_stack[-1]:
                                         leave_on = 1
                                 if not leave_on:
+                                    potential_pop = 0
                                     parser_stack.pop()
                                     parser_push_loc.pop()
                                     if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
@@ -392,6 +410,7 @@ def main():
                                 if item[1] == parser_stack[-1]:
                                     leave_on = 1
                             if not leave_on:
+                                potential_pop = 0
                                 parser_stack.pop()
                                 parser_push_loc.pop()
                                 if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
@@ -400,6 +419,7 @@ def main():
                             parser_push_loc.append(len(parser_stack)-1)
                         print("pushloc value after:"+str(parser_push_loc))
                         print("After itteration parser stack: " + str(parser_stack))
+                        already_attempted.append(transaction)
                     else:
                         print("Bad Push")
                         bad_push = 1
@@ -407,6 +427,17 @@ def main():
                     if 0 < len(parser_stack):
                         if parser_stack[-1] not in parse_table[0] and not bad_push:
                             pushmode=1
+                    if potential_pop and lefty == parser_stack[-1]:
+                        parser_stack.pop()
+                        parser_push_loc.pop()
+                        if len(parser_stack)>1:
+                            parser_push_loc.append(len(parser_stack)-1)
+                        if parser_stack[-1] == ",":
+                            parser_stack.pop()
+                            parser_push_loc.pop()
+                            if len(parser_stack)>1:
+                                parser_push_loc.append(len(parser_stack)-1)
+                        continue
                 else:  
                     """
                     Popping logic

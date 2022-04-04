@@ -14,5 +14,5 @@ tom = "scott
 int cock;
 void function_name ( int cocks){
     int balls;
-    balls = 1;
+    cocks = 1;
 }
