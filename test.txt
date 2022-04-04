@@ -1,3 +1,4 @@
+/*
 class Cat {
 string breed;
 string color;
@@ -9,3 +10,9 @@ this.age = 0;
 }
 bobby = 15;
 tom = "scott
+*/
+int cock;
+void function_name ( int cocks){
+    int balls;
+    cocks = 1;
+}

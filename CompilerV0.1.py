@@ -5,6 +5,7 @@
 #remove whitespace from reading
 #move to next buffer after reading runs out of chars
 from cmath import log
+from queue import Empty
 import re
 from tkinter import Variable
 
@@ -77,13 +78,13 @@ def main():
         elif lexeme not in symbol_table.keys() and (prev not in keywords) and lexeme != "" :
             if integer_regex.fullmatch(lexeme):
                 print("integer lexeme:" + lexeme)
-                read_order.append([lexeme, "int"])
+                read_order.append([lexeme, "intConstant"])
             elif double_regex.fullmatch(lexeme):
                 print("double lexeme:" + lexeme)
-                read_order.append([lexeme, "double"])
+                read_order.append([lexeme, "doubleConstant"])
             elif string_regex.fullmatch(lexeme):
                 print("string lexeme:" + lexeme)
-                read_order.append([lexeme, "string"])
+                read_order.append([lexeme, "stringConstant"])
             else:
                 log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
                 determine_error()
@@ -134,7 +135,6 @@ def main():
     line_num = 1
 
     while token != "eof":
-        print(lexeme)
         if cnt<len(buffer1):
             token = buffer1[cnt]
         if cnt>=len(buffer1):
@@ -224,7 +224,331 @@ def main():
     print(line_num)
     print(read_order)
     print(symbol_table)
-        
+    
+    def parser(tokens):
+        expr_block_constant = [["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'","Constant"]]
+        expr_block = [["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"]]
+        lval_block = [["ident",".","Expr"],["]","Expr","[","Expr"]]
+        call = [")","Actuals","(","ident",".","Expr"]
+        parse_table = [["terminals","ident","intConstant","doubleConstant","boolConstant","stringConstant","null","int","double","bool","string","class","void","interface","this","extends","implements","for","while","if","else","return","break","new","NewArray","Print","ReadInteger","ReadLine","true","false",";","&&","||","!",",",".","[","{","(","=","+","-","*","/","%","<",">","<=",">=","==","!=","/epsilon"],
+                    ["Program","Decl",None,None,None,None,None,"Decl","Decl","Decl","Decl","Decl","Decl","Decl",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["Decl",[["VariableDecl"],["FunctionDecl"]],None,None,None,None,None,[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],"ClassDecl","FunctionDecl","InterfaceDecl",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["VariableDecl",[";","Variable"],None,None,None,None,None,[";","Variable"],[";","Variable"],[";","Variable"],[";","Variable"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["Variable",["ident","Type"],None,None,None,None,None,["ident","Type"],["ident","Type"],["ident","Type"],["ident","Type"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["Type",["Type'","ident"],None,None,None,None,None,["Type'","int"],["Type'","double"],["Type'","bool"],["Type'","string"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["Type'","/epsilon",None,None,None,None,None,"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,["Type'","]","["],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["FunctionDecl",["StmtBlock",")","Formals","(","ident","Type"],None,None,None,None,None,["StmtBlock",")","Formals","(","ident","Type"],["StmtBlock",")","Formals","(","ident","Type"],["StmtBlock",")","Formals","(","ident","Type"],["StmtBlock",")","Formals","(","ident","Type"],None,["StmtBlock",")","Formals","(","ident","void"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["Formals",[["Variable"],["/epsilon"]],None,None,None,None,None,[["Variable"],["/epsilon"]],[["Variable"],["/epsilon"]],[["Variable"],["/epsilon"]],[["Variable"],["/epsilon"]],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,",",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["ClassDecl",None,None,None,None,None,None,None,None,None,None,["}","Field","{",",","ident","implements","ident","extends","ident","class"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["Field",[["VariableDecl"],["FunctionDecl"]],None,None,None,None,None,[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],[["VariableDecl"],["FunctionDecl"]],None,"FunctionDecl",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["Interface",None,None,None,None,None,None,None,None,None,None,None,None,["}","Prototype","{","ident","interface"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["Prototype",[";",")","Formals","(","ident","Type"],None,None,None,None,None,[";",")","Formals","(","ident","Type"],[";",")","Formals","(","ident","Type"],[";",")","Formals","(","ident","Type"],[";",")","Formals","(","ident","Type"],None,[";",")","Formals","(","ident","void"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["StmtBlock",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,["}","Stmt","VariableDecl","{"],None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["Stmt",[";","Expr"],[";","Expr"],[";","Expr"],[";","Expr"],[";","Expr"],None,None,None,None,None,None,None,None,[";","Expr"],None,None,"ForStmt","WhileStmt","IfStmt",None,"ReturnStmt","BreakStmt",[";","Expr"],[";","Expr"],"PrintStmt",[";","Expr"],[";","Expr"],None,None,None,None,None,[";","Expr"],None,None,None,["}","Stmt","VariableDecl","{"],[";","Expr"],None,None,[";","Expr"],None,None,None,None,None,None,None,None,None,None],
+                    ["IfStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,["Stmt","else","Stmt",")","Expr","(","if"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["WhileStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,["Stmt",")","Expr","(","while"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["ForStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,["Stmt",")","Expr",";","Expr",";","Expr","(","for"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["ReturnStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,[";","Expr","return"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["BreakStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,[";","break"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["PrintStmt",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,[";",")",",","Expr","(","Print"],None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None],
+                    ["Expr",expr_block,expr_block_constant,expr_block_constant,expr_block_constant,expr_block_constant,None,None,None,None,None,None,None,None,[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'","this"]],None,None,None,None,None,None,None,None,[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'","ident","new"]],[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'",")","Type",",","Expr","(","NewArray"]],None,[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'",")","(","ReadInteger"]],[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'",")","(","ReadLine"]],None,None,None,None,None,[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'","Expr","!"]],None,None,None,[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'",")","Expr","("]],None,None,[["Expr'","LValue"],["Expr'","Call"],["Expr'","Actuals"],["Expr'","Expr","=","LValue"],["Expr'","Expr","-"]],None,None,None,None,None,None,None,None,None,None],
+                    ["Expr'",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,[["Expr'","Expr","&&"],["/epsilon"]],[["Expr'","Expr","||"],["/epsilon"]],None,None,None,None,None,None,None,[["Expr'","Expr","+"],["/epsilon"]],[["Expr'","Expr","-"],["/epsilon"]],[["Expr'","Expr","*"],["/epsilon"]],[["Expr'","Expr","/"],["/epsilon"]],[["Expr'","Expr","%"],["/epsilon"]],[["Expr'","Expr","<"],["/epsilon"]],[["Expr'","Expr",">"],["/epsilon"]],[["Expr'","Expr","<="],["/epsilon"]],[["Expr'","Expr",">="],["/epsilon"]],[["Expr'","Expr","=="],["/epsilon"]],[["Expr'","Expr","!="],["/epsilon"]],None],
+                    ["LValue",[["ident"],["ident",".","Expr"],["]","Expr","[","Expr"]],lval_block,lval_block,lval_block,lval_block,None,None,None,None,None,None,None,None,lval_block,None,None,None,None,None,None,None,None,lval_block,lval_block,None,lval_block,lval_block,None,None,None,None,None,lval_block,None,None,None,None,lval_block,None,None,lval_block,None,None,None,None,None,None,None,None,None,None],
+                    ["Call",[")","Actuals","(","ident"],call,call,call,call,None,None,None,None,None,None,None,None,call,None,None,None,None,None,None,None,None,call,call,None,call,call,None,None,None,None,None,call,None,None,None,None,call,None,None,call,None,None,None,None,None,None,None,None,None,None],
+                    ["Actuals",[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],None,None,None,None,None,None,None,None,[[",","Expr"],["/epsilon"]],None,None,None,None,None,None,None,None,[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],None,[[",","Expr"],["/epsilon"]],[[",","Expr"],["/epsilon"]],None,None,None,None,None,[[",","Expr"],["/epsilon"]],None,None,None,None,[[",","Expr"],["/epsilon"]],None,None,[[",","Expr"],["/epsilon"]],None,None,None,None,None,None,None,None,None,None],
+                    ["Constant",None, "intConstant","doubleConstant","boolConstant","stringConstant","null",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None]]
+        parser_stack =["Program"]
+        code_queue = tokens
+        code_queue_pointer = 0
+        parser_push_loc =[0,len(parser_stack)-1]
+        stars = [("Prototype", "InterfaceDecl"),("Field", "ClassDecl"),("VariableDecl", "StmtBlock"),("Stmt","StmtBlock")] #Tuple(thing with *, Thing producing it)
+        pluses = [("Decl", "Program"),("implements ident", "ClassDecl"),("Expr", "PrintStmt"),("Expr", "Actuals"),("Variable", "Formals")]
+        already_attempted =[]
+        already_handled= []
+        is_complete=0
+        bad_push =0
+        pushmode = 1
+        print(parse_table[23])
+        def parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode):
+            cnt = 0
+            org_len = len(parser_stack)
+            org_pointer= code_queue_pointer
+            potential_pop = 0
+            while not code_queue_pointer >= len(code_queue):
+                cnt = cnt +1
+                print("""\n\nNext iteration: """ + str(cnt) +"""\n"""+
+                    """Pushmode: """+ str(pushmode) +"\n"+
+                    """Looking for: """+ str(code_queue[code_queue_pointer])+"\n"+
+                    """Current parse stack """ + str(parser_stack) +"\n"+
+                    """Current parse locs """+ str(parser_push_loc) + "\n" +
+                    """Already tried """ + str(already_attempted) + "\n" +
+                    """Length of the code queue """ + str(len(code_queue))+"\n"+
+                    """Code queue pointer """ + str(code_queue_pointer) + "\n" +
+                    """Code Queue """ + str(code_queue[code_queue_pointer]) + "\n"+
+                    """Bad Push """ + str(bad_push)+ "\n"+
+                    """Potential pop""" + str(potential_pop)
+                    )
+                if pushmode:
+                    """
+                    Pushing logic
+                    mini pop, if last item is a non terminal that doesn t have a + or * pop it and replace it with its production
+                    only push if the addition isnt in already tried
+                    is single item
+                        push it to stack
+                        update the parser loc
+                    is a list
+                        push it to stack
+                        update the parser loc
+                    is a list of lists
+                        for list in lists
+                            push to parser stack
+                            update stack loc
+                            parse ??? Need to flush out more
+                    if last item not terminal
+                        retain push mode
+                    if no good push:
+                        bad_push = 1
+                        pushmode = 0
+                    """
+                    lefty = parser_stack[-1]
+                    potential_pop = 0
+                    pushmode = 0
+                    leave_on = 0
+                    x = -1
+                    y = -1
+                    #Popping off Epsilon
+                    if parser_stack[-1] == "/epsilon":
+                        parser_stack.pop()
+                        parser_push_loc.pop()
+                        if len(parser_stack)>1:
+                            parser_push_loc.append(len(parser_stack)-1)
+                        continue
+                    # finding y 
+                    if code_queue[code_queue_pointer][0] in parse_table[0]:
+                        #non ident or contstn y
+                        y = parse_table[0].index(code_queue[code_queue_pointer][0])
+                    elif code_queue[code_queue_pointer][0] in symbol_table.keys():
+                        # if it is an ident its going to be 1
+                        y = 1
+                    elif code_queue[code_queue_pointer][1][-8:] == "Constant":
+                        print("In Constants")
+                        # Constants are a bit different
+                        y = parse_table[0].index(code_queue[code_queue_pointer][1])
+
+                    # find the x value
+                    for row in range(0,len(parse_table)):
+                        for col in range(0,len(parse_table[row])):
+                            if parser_stack[-1] == parse_table[row][0] and parse_table[row][col] not in already_attempted:
+                                x = row
+                                break
+                    # Check if the star or plus may be needed to pop
+                    for item in pluses:
+                        if item[1] == parser_stack[-1] and parser_stack[-1] != "Program" and ( code_queue[code_queue_pointer][0] in parse_table[0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys())):
+                            print("Potential pop plus")
+                            potential_pop = 1
+                    for item in stars:
+                        if item[1] == parser_stack[-1] and parser_stack[-1] != "Program" and ( code_queue[code_queue_pointer][0] in parse_table[0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys())):
+                            print("Potential pop plus")
+                            potential_pop = 1
+                    # determine if we are out of bounds
+                    if x == -1 or y == -1:
+                        print("We no good boys")
+                        print("x: "+ str(x))
+                        print("y: "+ str(y))
+                        pushmode = 0
+                        bad_push = 1
+                        continue
+                    # get the next production
+                    transaction = parse_table[x][y]
+                    # verrify the transactions are not done
+                    if transaction == None:
+                        print("We good boys")
+                        print("x: "+ str(x))
+                        print("y: "+ str(y))
+                        pushmode = 0
+                        continue
+                    print("found transaction: "+ str(transaction) + " at " + str(x) + " "+str(y))
+                    # we only work with the transaction if its not already attempted
+                    if transaction not in already_attempted :
+                        print("new transaction: "+ str(transaction))
+                        #Check if there are multiple values to append
+                        print("pushloc value before:"+str(parser_push_loc))
+                        if isinstance(transaction, list):
+                            #Check if we're at a branching point
+                            if isinstance(transaction[0],list):
+                                print("list of lists")
+                                # verrify that we are using a plus/ star or not
+                                for item in pluses:
+                                    if item[1] == parser_stack[-1]:
+                                        leave_on = 1
+                                for item in stars:
+                                    if item[1] == parser_stack[-1]:
+                                        leave_on = 1
+                                if not leave_on:
+                                    # if we dont have to keep the last item we pop it
+                                    potential_pop = 0
+                                    parser_stack.pop()
+                                    parser_push_loc.pop()
+                                    # do not add the same location twice
+                                    if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
+                                        parser_push_loc.append(len(parser_stack)-1)
+                                    # for each list in the lists
+                                for components in transaction:
+                                    # add the entire list of components
+                                    for component in components:
+                                        parser_stack.append(component)
+                                    parser_push_loc.append(len(parser_stack)-1)
+                                    # add it to already attempted, prevents recursive depth
+                                    already_attempted.append(transaction)
+                                    # make the recursive call with just the transactions info 
+                                    outcome, code_queue_pointer=parse(code_queue, code_queue_pointer, parser_stack[-len(components):], [parser_push_loc[0], parser_push_loc[1]], already_attempted, bad_push, 1)
+                                    print("Back from recursion")
+                                    if outcome:
+                                        print("Good Outcome")
+                                        parser_stack.pop()
+                                        parser_push_loc.pop()
+                                        already_attempted = []
+                                        break
+                                    else:
+                                        continue
+                            else:
+                                # check if the last item needs to stay on
+                                for item in pluses:
+                                    if item[1] == parser_stack[-1]:
+                                        leave_on = 1
+                                for item in stars:
+                                    if item[1] == parser_stack[-1]:
+                                        leave_on = 1
+                                # if its not needed we can remove it
+                                if not leave_on:
+                                    potential_pop = 0
+                                    parser_stack.pop()
+                                    parser_push_loc.pop()
+                                    if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
+                                        parser_push_loc.append(len(parser_stack)-1)
+                                # add each item in the list to the stack
+                                for component in transaction:
+                                    parser_stack.append(component)
+                                parser_push_loc.append(len(parser_stack)-1)
+                        else:
+                            # check if the last item needs to stay on
+                            for item in pluses:
+                                if item[1] == parser_stack[-1]:
+                                    leave_on = 1
+                            for item in stars:
+                                if item[1] == parser_stack[-1]:
+                                    leave_on = 1
+                            # if the last item needs to be popped do it here
+                            if not leave_on:
+                                potential_pop = 0
+                                parser_stack.pop()
+                                parser_push_loc.pop()
+                                if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
+                                    parser_push_loc.append(len(parser_stack)-1)
+                            # add the transaction to the stack
+                            parser_stack.append(transaction)
+                            parser_push_loc.append(len(parser_stack)-1)
+                        print("pushloc value after:"+str(parser_push_loc))
+                        print("After itteration parser stack: " + str(parser_stack))
+                        # append the transaction to the already attempted
+                        already_attempted.append(transaction)
+                    else:
+                        # We get here if the item is already in the list of attempted
+                        print("Bad Push")
+                        bad_push = 1
+                        pushmode = 0
+                    if 0 < len(parser_stack):
+                        # if we arent done and the last item isnt a terminal and a valid push lets keep priority
+                        if parser_stack[-1] not in parse_table[0] and not bad_push:
+                            pushmode=1
+                    # if we have a potential pop and the parser stack is left unchanged we need to pop
+                    if potential_pop and lefty == parser_stack[-1]:
+                        parser_stack.pop()
+                        parser_push_loc.pop()
+                        if len(parser_stack)>1:
+                            parser_push_loc.append(len(parser_stack)-1)
+                        # Check if it also had a comma in the queue
+                        # May need to add a check to see if the next code thing is also the ","
+                        if parser_stack[-1] == ",":
+                            parser_stack.pop()
+                            parser_push_loc.pop()
+                            if len(parser_stack)>1:
+                                parser_push_loc.append(len(parser_stack)-1)
+                        pushmode = 0
+                        continue
+                else:  
+                    """
+                    Popping logic
+                    if bad_push:
+                        add push to already tried
+                        purge back to last push
+                        bad_push = 0
+                    if terminal not same trerminal in code
+                        bad_push=1
+                    if good pop
+                        pop latest
+                        update code queue pointer
+                        update parse stack loc
+                        clear already tried
+                    if next is terminal 
+                        retain pop mode
+                    """
+                    pushmode = 1
+                    # If the parser stack has an epsilon on it pop it
+                    if parser_stack[-1] == "/epsilon":
+                        parser_stack.pop()
+                        parser_push_loc.pop()
+                        if len(parser_stack)>1:
+                            parser_push_loc.append(len(parser_stack)-1)
+                        pushmode = 0
+                        continue
+                    # if the last push was bad we may need to remove it
+                    if bad_push:
+                        print("clensing the bad")
+                        if len(parser_push_loc) > 1:
+                            while len(parser_stack)>parser_push_loc[-2]+1:
+                                parser_stack.pop()
+                        else:
+                            return -1, org_pointer
+                        if not len(parser_push_loc) <= 1:
+                            parser_push_loc.pop()
+                        already_attempted=[]
+                        bad_push = 0
+                    # if the terminal is found we pop it and increment the parser stack
+                    elif parser_stack[-1] == code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys()):
+                        print("Match found")
+                        already_attempted=[]
+                        parser_stack.pop()
+                        parser_push_loc.pop()
+                        if len(parser_stack) - 1 not in parser_push_loc:
+                            parser_push_loc.append(len(parser_stack)-1)
+                        code_queue_pointer = code_queue_pointer + 1
+                    # match found but for constant
+                    elif code_queue[code_queue_pointer][1][-8:] == "Constant":
+                        print("Match found for Constant")
+                        already_attempted=[]
+                        parser_stack.pop()
+                        parser_push_loc.pop()
+                        if len(parser_stack) - 1 not in parser_push_loc:
+                            parser_push_loc.append(len(parser_stack)-1)
+                        code_queue_pointer = code_queue_pointer + 1
+                    # if the terminal is not the right one we need to kill the push
+                    elif parser_stack[-1] != code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] not in symbol_table.keys()):
+                        bad_push = 1
+                    # if we have the correct following item we retain the pop mode
+                    if code_queue_pointer < len(code_queue) and len(parser_stack) > 0:
+                        if parser_stack[-1] == code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys()) or (code_queue[code_queue_pointer][1][-8:] == "Constant" and parser_stack[-1] == code_queue[code_queue_pointer][1]):
+                            pushmode=0
+                    print(parser_stack)
+                # if we are now done the current parser length then we are done a recursive case
+                if len(parser_stack) < org_len:
+                    print("we finished the recursion")
+                    return 1, code_queue_pointer
+            if cnt >=50:
+                return -1, org_pointer
+            return 1, code_queue_pointer
+        print("coutcome " + str(parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode)[0]))        
+    parser(read_order)
 if __name__ == "__main__":
     main()
     
