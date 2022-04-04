@@ -316,20 +316,32 @@ def main():
                     leave_on = 0
                     x = -1
                     y = -1
+                    #Popping off Epsilon
                     if parser_stack[-1] == "/epsilon":
                         parser_stack.pop()
                         parser_push_loc.pop()
                         if len(parser_stack)>1:
                             parser_push_loc.append(len(parser_stack)-1)
                         continue
+                    # finding y 
                     if code_queue[code_queue_pointer][0] in parse_table[0]:
+                        #non ident or contstn y
                         y = parse_table[0].index(code_queue[code_queue_pointer][0])
                     elif code_queue[code_queue_pointer][0] in symbol_table.keys():
+                        # if it is an ident its going to be 1
                         y = 1
                     elif code_queue[code_queue_pointer][1][-8:] == "Constant":
                         print("In Constants")
+                        # Constants are a bit different
                         y = parse_table[0].index(code_queue[code_queue_pointer][1])
 
+                    # find the x value
+                    for row in range(0,len(parse_table)):
+                        for col in range(0,len(parse_table[row])):
+                            if parser_stack[-1] == parse_table[row][0] and parse_table[row][col] not in already_attempted:
+                                x = row
+                                break
+                    # Check if the star or plus may be needed to pop
                     for item in pluses:
                         if item[1] == parser_stack[-1] and parser_stack[-1] != "Program" and ( code_queue[code_queue_pointer][0] in parse_table[0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys())):
                             print("Potential pop plus")
@@ -338,14 +350,7 @@ def main():
                         if item[1] == parser_stack[-1] and parser_stack[-1] != "Program" and ( code_queue[code_queue_pointer][0] in parse_table[0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys())):
                             print("Potential pop plus")
                             potential_pop = 1
-                    
-                    for row in range(0,len(parse_table)):
-                        for col in range(0,len(parse_table[row])):
-                            if parser_stack[-1] == parse_table[row][0] and parse_table[row][col] not in already_attempted:
-                                x = row
-                                break
-                    #Find the column containing our terminal 
-
+                    # determine if we are out of bounds
                     if x == -1 or y == -1:
                         print("We no good boys")
                         print("x: "+ str(x))
@@ -353,7 +358,9 @@ def main():
                         pushmode = 0
                         bad_push = 1
                         continue
+                    # get the next production
                     transaction = parse_table[x][y]
+                    # verrify the transactions are not done
                     if transaction == None:
                         print("We good boys")
                         print("x: "+ str(x))
@@ -361,6 +368,7 @@ def main():
                         pushmode = 0
                         continue
                     print("found transaction: "+ str(transaction) + " at " + str(x) + " "+str(y))
+                    # we only work with the transaction if its not already attempted
                     if transaction not in already_attempted :
                         print("new transaction: "+ str(transaction))
                         #Check if there are multiple values to append
@@ -369,6 +377,7 @@ def main():
                             #Check if we're at a branching point
                             if isinstance(transaction[0],list):
                                 print("list of lists")
+                                # verrify that we are using a plus/ star or not
                                 for item in pluses:
                                     if item[1] == parser_stack[-1]:
                                         leave_on = 1
@@ -376,16 +385,22 @@ def main():
                                     if item[1] == parser_stack[-1]:
                                         leave_on = 1
                                 if not leave_on:
+                                    # if we dont have to keep the last item we pop it
                                     potential_pop = 0
                                     parser_stack.pop()
                                     parser_push_loc.pop()
+                                    # do not add the same location twice
                                     if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
                                         parser_push_loc.append(len(parser_stack)-1)
+                                    # for each list in the lists
                                 for components in transaction:
+                                    # add the entire list of components
                                     for component in components:
                                         parser_stack.append(component)
                                     parser_push_loc.append(len(parser_stack)-1)
+                                    # add it to already attempted, prevents recursive depth
                                     already_attempted.append(transaction)
+                                    # make the recursive call with just the transactions info 
                                     outcome, code_queue_pointer=parse(code_queue, code_queue_pointer, parser_stack[-len(components):], [parser_push_loc[0], parser_push_loc[1]], already_attempted, bad_push, 1)
                                     print("Back from recursion")
                                     if outcome:
@@ -397,51 +412,63 @@ def main():
                                     else:
                                         continue
                             else:
+                                # check if the last item needs to stay on
                                 for item in pluses:
                                     if item[1] == parser_stack[-1]:
                                         leave_on = 1
                                 for item in stars:
                                     if item[1] == parser_stack[-1]:
                                         leave_on = 1
+                                # if its not needed we can remove it
                                 if not leave_on:
                                     potential_pop = 0
                                     parser_stack.pop()
                                     parser_push_loc.pop()
                                     if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
                                         parser_push_loc.append(len(parser_stack)-1)
+                                # add each item in the list to the stack
                                 for component in transaction:
                                     parser_stack.append(component)
                                 parser_push_loc.append(len(parser_stack)-1)
                         else:
+                            # check if the last item needs to stay on
                             for item in pluses:
                                 if item[1] == parser_stack[-1]:
                                     leave_on = 1
                             for item in stars:
                                 if item[1] == parser_stack[-1]:
                                     leave_on = 1
+                            # if the last item needs to be popped do it here
                             if not leave_on:
                                 potential_pop = 0
                                 parser_stack.pop()
                                 parser_push_loc.pop()
                                 if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
                                     parser_push_loc.append(len(parser_stack)-1)
+                            # add the transaction to the stack
                             parser_stack.append(transaction)
                             parser_push_loc.append(len(parser_stack)-1)
                         print("pushloc value after:"+str(parser_push_loc))
                         print("After itteration parser stack: " + str(parser_stack))
+                        # append the transaction to the already attempted
                         already_attempted.append(transaction)
                     else:
+                        # We get here if the item is already in the list of attempted
                         print("Bad Push")
                         bad_push = 1
                         pushmode = 0
                     if 0 < len(parser_stack):
+                        # if we arent done and the last item isnt a terminal and a valid push lets keep priority
                         if parser_stack[-1] not in parse_table[0] and not bad_push:
                             pushmode=1
+                    # if we have a potential pop and the parser stack is left unchanged we need to pop
                     if potential_pop and lefty == parser_stack[-1]:
                         parser_stack.pop()
                         parser_push_loc.pop()
                         if len(parser_stack)>1:
                             parser_push_loc.append(len(parser_stack)-1)
+                        # Check if it also had a comma in the queue
+                        # May need to add a check to see if the next code thing is also the ","
                         if parser_stack[-1] == ",":
                             parser_stack.pop()
                             parser_push_loc.pop()
@@ -467,6 +494,7 @@ def main():
                         retain pop mode
                     """
                     pushmode = 1
+                    # If the parser stack has an epsilon on it pop it
                     if parser_stack[-1] == "/epsilon":
                         parser_stack.pop()
                         parser_push_loc.pop()
@@ -474,6 +502,7 @@ def main():
                             parser_push_loc.append(len(parser_stack)-1)
                         pushmode = 0
                         continue
+                    # if the last push was bad we may need to remove it
                     if bad_push:
                         print("clensing the bad")
                         if len(parser_push_loc) > 1:
@@ -485,6 +514,7 @@ def main():
                             parser_push_loc.pop()
                         already_attempted=[]
                         bad_push = 0
+                    # if the terminal is found we pop it and increment the parser stack
                     elif parser_stack[-1] == code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys()):
                         print("Match found")
                         already_attempted=[]
@@ -493,6 +523,7 @@ def main():
                         if len(parser_stack) - 1 not in parser_push_loc:
                             parser_push_loc.append(len(parser_stack)-1)
                         code_queue_pointer = code_queue_pointer + 1
+                    # match found but for constant
                     elif code_queue[code_queue_pointer][1][-8:] == "Constant":
                         print("Match found for Constant")
                         already_attempted=[]
@@ -501,12 +532,15 @@ def main():
                         if len(parser_stack) - 1 not in parser_push_loc:
                             parser_push_loc.append(len(parser_stack)-1)
                         code_queue_pointer = code_queue_pointer + 1
+                    # if the terminal is not the right one we need to kill the push
                     elif parser_stack[-1] != code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] not in symbol_table.keys()):
                         bad_push = 1
+                    # if we have the correct following item we retain the pop mode
                     if code_queue_pointer < len(code_queue) and len(parser_stack) > 0:
-                        if parser_stack[-1] == code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys()):
+                        if parser_stack[-1] == code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys()) or (code_queue[code_queue_pointer][1][-8:] == "Constant" and parser_stack[-1] == code_queue[code_queue_pointer][1]):
                             pushmode=0
                     print(parser_stack)
+                # if we are now done the current parser length then we are done a recursive case
                 if len(parser_stack) < org_len:
                     print("we finished the recursion")
                     return 1, code_queue_pointer
