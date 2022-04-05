@@ -126,6 +126,7 @@ def main():
     declarators = parse("declarators.txt")
     operators = parse("operators.txt")
     comments = parse("comments.txt")
+    panic = parse("panic_symbols.txt")
 
     token = "null"
     token2 = "null"
@@ -267,13 +268,12 @@ def main():
         is_complete=0
         bad_push =0
         pushmode = 1
-        print(parse_table[23])
         def parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode):
             cnt = 0
             org_len = len(parser_stack)
             org_pointer= code_queue_pointer
             potential_pop = 0
-            while not code_queue_pointer >= len(code_queue):
+            while not code_queue_pointer >= len(code_queue)  and cnt <=50:
                 cnt = cnt +1
                 print("""\n\nNext iteration: """ + str(cnt) +"""\n"""+
                     """Pushmode: """+ str(pushmode) +"\n"+
@@ -321,6 +321,9 @@ def main():
                         parser_push_loc.pop()
                         if len(parser_stack)>1:
                             parser_push_loc.append(len(parser_stack)-1)
+                        continue
+                    if parser_stack[-1] in parse_table[0]:
+                        pushmode = 0
                         continue
                     # finding y 
                     if code_queue[code_queue_pointer][0] in parse_table[0]:
@@ -539,6 +542,17 @@ def main():
                         if parser_stack[-1] == code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys()) or (code_queue[code_queue_pointer][1][-8:] == "Constant" and parser_stack[-1] == code_queue[code_queue_pointer][1]):
                             pushmode=0
                     print(parser_stack)
+                    if panic_mode:
+                        panic_mode = 0
+                        while parser_stack[-1] not in panic or len(parser_stack) > 2:
+                            parser_stack.pop()
+                            code_queue_pointer = code_queue_pointer + 1
+                            if parser_push_loc[-1] >= len(parser_stack) and len(parser_push_loc) >1:
+                                parser_push_loc.pop()
+                        parser_stack.pop()
+                        if parser_push_loc[-1] >= len(parser_stack) and len(parser_push_loc) >1:
+                                parser_push_loc.pop()
+
                 # if we are now done the current parser length then we are done a recursive case
                 if len(parser_stack) < org_len:
                     print("we finished the recursion")
