@@ -322,7 +322,7 @@ def main():
                     if parser_stack[-1] == "/epsilon":
                         parser_stack.pop()
                         parser_push_loc.pop()
-                        if len(parser_stack)>1:
+                        if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
                             parser_push_loc.append(len(parser_stack)-1)
                         continue
                     if parser_stack[-1] in parse_table[0]:
@@ -434,7 +434,9 @@ def main():
                                 # add each item in the list to the stack
                                 for component in transaction:
                                     parser_stack.append(component)
-                                parser_push_loc.append(len(parser_stack)-1)
+                                
+                                if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
+                                    parser_push_loc.append(len(parser_stack)-1)
                         else:
                             # check if the last item needs to stay on
                             for item in pluses:
@@ -452,7 +454,9 @@ def main():
                                     parser_push_loc.append(len(parser_stack)-1)
                             # add the transaction to the stack
                             parser_stack.append(transaction)
-                            parser_push_loc.append(len(parser_stack)-1)
+                            
+                            if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
+                                parser_push_loc.append(len(parser_stack)-1)
                         print("pushloc value after:"+str(parser_push_loc))
                         print("After itteration parser stack: " + str(parser_stack))
                         # append the transaction to the already attempted
@@ -503,7 +507,7 @@ def main():
                     if parser_stack[-1] == "/epsilon":
                         parser_stack.pop()
                         parser_push_loc.pop()
-                        if len(parser_stack)>1:
+                        if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
                             parser_push_loc.append(len(parser_stack)-1)
                         pushmode = 0
                         continue
