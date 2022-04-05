@@ -268,7 +268,8 @@ def main():
         is_complete=0
         bad_push =0
         pushmode = 1
-        def parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode):
+        original_path = 0;
+        def parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode, original_path):
             cnt = 0
             org_len = len(parser_stack)
             org_pointer= code_queue_pointer
@@ -285,7 +286,8 @@ def main():
                     """Code queue pointer """ + str(code_queue_pointer) + "\n" +
                     """Code Queue """ + str(code_queue[code_queue_pointer]) + "\n"+
                     """Bad Push """ + str(bad_push)+ "\n"+
-                    """Potential pop""" + str(potential_pop)
+                    """Potential pop """ + str(potential_pop) + "\n"+
+                    """TimeLine  """  + str(original_path)
                     )
                 if pushmode:
                     """
@@ -403,7 +405,7 @@ def main():
                                     # add it to already attempted, prevents recursive depth
                                     already_attempted.append(transaction)
                                     # make the recursive call with just the transactions info 
-                                    outcome, code_queue_pointer=parse(code_queue, code_queue_pointer, parser_stack[-len(components):], [parser_push_loc[0], parser_push_loc[1]], already_attempted, bad_push, 1)
+                                    outcome, code_queue_pointer=parse(code_queue, code_queue_pointer, parser_stack[-len(components):], [parser_push_loc[0], parser_push_loc[1]], already_attempted, bad_push, 1, 1)
                                     print("Back from recursion")
                                     if outcome:
                                         print("Good Outcome")
@@ -542,6 +544,7 @@ def main():
                         if parser_stack[-1] == code_queue[code_queue_pointer][0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys()) or (code_queue[code_queue_pointer][1][-8:] == "Constant" and parser_stack[-1] == code_queue[code_queue_pointer][1]):
                             pushmode=0
                     print(parser_stack)
+                    """
                     if panic_mode:
                         panic_mode = 0
                         while parser_stack[-1] not in panic or len(parser_stack) > 2:
@@ -552,6 +555,7 @@ def main():
                         parser_stack.pop()
                         if parser_push_loc[-1] >= len(parser_stack) and len(parser_push_loc) >1:
                                 parser_push_loc.pop()
+                    """
 
                 # if we are now done the current parser length then we are done a recursive case
                 if len(parser_stack) < org_len:
@@ -560,7 +564,7 @@ def main():
             if cnt >=50:
                 return -1, org_pointer
             return 1, code_queue_pointer
-        print("coutcome " + str(parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode)[0]))        
+        print("coutcome " + str(parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode, original_path)[0]))        
     parser(read_order)
 if __name__ == "__main__":
     main()
