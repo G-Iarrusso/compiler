@@ -268,13 +268,14 @@ def main():
         is_complete=0
         bad_push =0
         pushmode = 1
-        original_path = 0;
-        def parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode, original_path):
+        original_path = 0
+        print(code_queue)
+        def parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode, original_path, panic_mode):
             cnt = 0
             org_len = len(parser_stack)
             org_pointer= code_queue_pointer
             potential_pop = 0
-            while not code_queue_pointer >= len(code_queue)  and cnt <=50:
+            while not code_queue_pointer >= len(code_queue):
                 cnt = cnt +1
                 print("""\n\nNext iteration: """ + str(cnt) +"""\n"""+
                     """Pushmode: """+ str(pushmode) +"\n"+
@@ -405,7 +406,7 @@ def main():
                                     # add it to already attempted, prevents recursive depth
                                     already_attempted.append(transaction)
                                     # make the recursive call with just the transactions info 
-                                    outcome, code_queue_pointer=parse(code_queue, code_queue_pointer, parser_stack[-len(components):], [parser_push_loc[0], parser_push_loc[1]], already_attempted, bad_push, 1, 1)
+                                    outcome, code_queue_pointer=parse(code_queue, code_queue_pointer, parser_stack[-len(components):], [parser_push_loc[0], parser_push_loc[1]], already_attempted, bad_push, 1, 1, 0)
                                     print("Back from recursion")
                                     if outcome:
                                         print("Good Outcome")
@@ -561,10 +562,10 @@ def main():
                 if len(parser_stack) < org_len:
                     print("we finished the recursion")
                     return 1, code_queue_pointer
-            if cnt >=50:
-                return -1, org_pointer
-            return 1, code_queue_pointer
-        print("coutcome " + str(parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode, original_path)[0]))        
+            if parser_stack[-1] == "Program":
+                return 1, code_queue_pointer
+            return 0, code_queue_pointer
+        print("coutcome " + str(parse(code_queue, code_queue_pointer, parser_stack, parser_push_loc, already_attempted, bad_push, pushmode, original_path,0)[0]))        
     parser(read_order)
 if __name__ == "__main__":
     main()
