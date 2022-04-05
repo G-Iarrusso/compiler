@@ -12,7 +12,9 @@ bobby = 15;
 tom = "scott
 */
 int cock;
+int nuts;
 void function_name ( int cocks){
     int balls;
     cocks = 1;
 }
+
