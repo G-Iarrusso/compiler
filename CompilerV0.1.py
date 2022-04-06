@@ -261,11 +261,7 @@ def main():
         code_queue = tokens
         code_queue_pointer = 0
         parser_push_loc =[0,len(parser_stack)-1]
-        stars = [("Prototype", "InterfaceDecl"),("Field", "ClassDecl"),("VariableDecl", "StmtBlock"),("Stmt","StmtBlock")] #Tuple(thing with *, Thing producing it)
-        pluses = [("Decl", "Program"),("implements ident", "ClassDecl"),("Expr", "PrintStmt"),("Expr", "Actuals"),("Variable", "Formals")]
         already_attempted =[]
-        already_handled= []
-        is_complete=0
         bad_push =0
         pushmode = 1
         original_path = 0
@@ -274,7 +270,6 @@ def main():
             cnt = 0
             org_len = len(parser_stack)
             org_pointer= code_queue_pointer
-            potential_pop = 0
             while not code_queue_pointer >= len(code_queue):
                 cnt = cnt +1
                 print("""\n\nNext iteration: """ + str(cnt) +"""\n"""+
@@ -287,7 +282,6 @@ def main():
                     """Code queue pointer """ + str(code_queue_pointer) + "\n" +
                     """Code Queue """ + str(code_queue[code_queue_pointer]) + "\n"+
                     """Bad Push """ + str(bad_push)+ "\n"+
-                    """Potential pop """ + str(potential_pop) + "\n"+
                     """TimeLine  """  + str(original_path)
                     )
                 if pushmode:
@@ -313,9 +307,7 @@ def main():
                         pushmode = 0
                     """
                     lefty = parser_stack[-1]
-                    potential_pop = 0
                     pushmode = 0
-                    leave_on = 0
                     x = -1
                     y = -1
                     #Popping off Epsilon
@@ -346,15 +338,6 @@ def main():
                             if parser_stack[-1] == parse_table[row][0] and parse_table[row][col] not in already_attempted:
                                 x = row
                                 break
-                    # Check if the star or plus may be needed to pop
-                    for item in pluses:
-                        if item[1] == parser_stack[-1] and parser_stack[-1] != "Program" and ( code_queue[code_queue_pointer][0] in parse_table[0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys())):
-                            print("Potential pop plus")
-                            potential_pop = 1
-                    for item in stars:
-                        if item[1] == parser_stack[-1] and parser_stack[-1] != "Program" and ( code_queue[code_queue_pointer][0] in parse_table[0] or (parser_stack[-1] == "ident" and code_queue[code_queue_pointer][0] in symbol_table.keys())):
-                            print("Potential pop plus")
-                            potential_pop = 1
                     # determine if we are out of bounds
                     if x == -1 or y == -1:
                         print("We no good boys")
@@ -382,22 +365,12 @@ def main():
                             #Check if we're at a branching point
                             if isinstance(transaction[0],list):
                                 print("list of lists")
-                                # verrify that we are using a plus/ star or not
-                                for item in pluses:
-                                    if item[1] == parser_stack[-1]:
-                                        leave_on = 1
-                                for item in stars:
-                                    if item[1] == parser_stack[-1]:
-                                        leave_on = 1
-                                if not leave_on:
-                                    # if we dont have to keep the last item we pop it
-                                    potential_pop = 0
-                                    parser_stack.pop()
-                                    parser_push_loc.pop()
-                                    # do not add the same location twice
-                                    if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
-                                        parser_push_loc.append(len(parser_stack)-1)
-                                    # for each list in the lists
+                                parser_stack.pop()
+                                parser_push_loc.pop()
+                                # do not add the same location twice
+                                if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
+                                    parser_push_loc.append(len(parser_stack)-1)
+                                # for each list in the lists
                                 for components in transaction:
                                     # add the entire list of components
                                     for component in components:
@@ -417,20 +390,10 @@ def main():
                                     else:
                                         continue
                             else:
-                                # check if the last item needs to stay on
-                                for item in pluses:
-                                    if item[1] == parser_stack[-1]:
-                                        leave_on = 1
-                                for item in stars:
-                                    if item[1] == parser_stack[-1]:
-                                        leave_on = 1
-                                # if its not needed we can remove it
-                                if not leave_on:
-                                    potential_pop = 0
-                                    parser_stack.pop()
-                                    parser_push_loc.pop()
-                                    if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
-                                        parser_push_loc.append(len(parser_stack)-1)
+                                parser_stack.pop()
+                                parser_push_loc.pop()
+                                if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
+                                    parser_push_loc.append(len(parser_stack)-1)
                                 # add each item in the list to the stack
                                 for component in transaction:
                                     parser_stack.append(component)
@@ -438,20 +401,10 @@ def main():
                                 if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
                                     parser_push_loc.append(len(parser_stack)-1)
                         else:
-                            # check if the last item needs to stay on
-                            for item in pluses:
-                                if item[1] == parser_stack[-1]:
-                                    leave_on = 1
-                            for item in stars:
-                                if item[1] == parser_stack[-1]:
-                                    leave_on = 1
-                            # if the last item needs to be popped do it here
-                            if not leave_on:
-                                potential_pop = 0
-                                parser_stack.pop()
-                                parser_push_loc.pop()
-                                if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
-                                    parser_push_loc.append(len(parser_stack)-1)
+                            parser_stack.pop()
+                            parser_push_loc.pop()
+                            if len(parser_stack)>1 and len(parser_stack) - 1 not in parser_push_loc:
+                                parser_push_loc.append(len(parser_stack)-1)
                             # add the transaction to the stack
                             parser_stack.append(transaction)
                             
@@ -470,21 +423,6 @@ def main():
                         # if we arent done and the last item isnt a terminal and a valid push lets keep priority
                         if parser_stack[-1] not in parse_table[0] and not bad_push:
                             pushmode=1
-                    # if we have a potential pop and the parser stack is left unchanged we need to pop
-                    if potential_pop and lefty == parser_stack[-1]:
-                        parser_stack.pop()
-                        parser_push_loc.pop()
-                        if len(parser_stack)>1:
-                            parser_push_loc.append(len(parser_stack)-1)
-                        # Check if it also had a comma in the queue
-                        # May need to add a check to see if the next code thing is also the ","
-                        if parser_stack[-1] == ",":
-                            parser_stack.pop()
-                            parser_push_loc.pop()
-                            if len(parser_stack)>1:
-                                parser_push_loc.append(len(parser_stack)-1)
-                        pushmode = 0
-                        continue
                 else:  
                     """
                     Popping logic
