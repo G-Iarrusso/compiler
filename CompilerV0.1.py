@@ -436,8 +436,92 @@ def main():
                     return False
                 else:
                     return True
+        elif tokens[tokens_current][0] == "this":
+            if not Terminals("this"):
+                return False
+            if not ExprPrime():
+                return False
+            else:
+                return True
+        elif tokens[tokens_current][0] == "new":
+            if not Terminals("new"):
+                return False
+            if not ident():
+                return False
+            if not ExprPrime:
+                return False
+            else:
+                return True
+        elif tokens[tokens_current][0] == "NewArray":
+            if not Terminals("NewArray"):
+                return False
+            if not Terminals("("):
+                return False
+            if not Expr():
+                return False
+            if not Terminals(","):
+                return False
+            if not Type():
+                return False
+            if not Terminals(")"):
+                return False
+            if not ExprPrime:
+                return False
+            else:
+                return True
+        elif tokens[tokens_current][0] == "ReadInteger":
+            if not Terminals("ReadInteger"):
+                return False
+            if not Terminals("("):
+                return False
+            if not Terminals(")"):
+                return False
+            if not ExprPrime:
+                return False
+            else:
+                return True
+        elif tokens[tokens_current][0] == "ReadLine":
+            if not Terminals("ReadLine"):
+                return False
+            if not Terminals("("):
+                return False
+            if not Terminals(")"):
+                return False
+            if not ExprPrime:
+                return False
+            else:
+                return True
+        elif tokens[tokens_current][0] == "!":
+            if not Terminals("!"):
+                return False
+            if not Expr():
+                return False
+            if not ExprPrime:
+                return False
+            else:
+                return True
+        elif tokens[tokens_current][0] == "(":
+            if not Terminals("("):
+                return False
+            if not Expr():
+                return False
+            if not Terminals(")"):
+                return False
+            if not ExprPrime:
+                return False
+            else:
+                return True
+        elif tokens[tokens_current][0] == "-":
+            if not Terminals("-"):
+                return False
+            if not Expr():
+                return False
+            if not ExprPrime:
+                return False
+            else:
+                return True
         #Add other constants
-        if tokens[tokens_current][1] == "intConstant":
+        elif tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][1] == "doubleConstant" or tokens[tokens_current][1] == "boolConstant" or tokens[tokens_current][1] == "stringConstant" or tokens[tokens_current][1] == "null":
             print("Found a Cosntant")
             if not Constant():
                 return False
@@ -453,6 +537,7 @@ def main():
         return True 
     #Add the other prime things
     def ExprPrime():
+        
         return True
 
     def Var():
@@ -473,7 +558,7 @@ def main():
     def Constant():
         global tokens_current
         print("Looking For " + "Constant" + " at " + str(tokens_current))
-        if tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][1] == "doubleConstant" or tokens[tokens_current][1] == "boolConstant" or tokens[tokens_current][1] == "stringConstant":
+        if tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][1] == "doubleConstant" or tokens[tokens_current][1] == "boolConstant" or tokens[tokens_current][1] == "stringConstant" or tokens[tokens_current][1] == "null":
             tokens_current = tokens_current + 1
             return True
         else:
