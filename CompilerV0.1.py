@@ -227,6 +227,8 @@ def main():
     print(line_num)
     print(read_order)
     print(symbol_table)
+
+    #Start of Parser-------------------------------------------------------------------------------------------------------------------------------------
     read_order.append("$")
     global tokens
     global tokens_current
@@ -244,6 +246,8 @@ def main():
             decl()
         if tokens[tokens_current] == "$":
             return True
+        else:
+            return False
     #Add other Declarations
     def decl():
         if VariableDecl():
@@ -274,49 +278,179 @@ def main():
         else:
             return True
     def Formals():
-        if tokens[tokens_current][0] == "int" or tokens[tokens_current][0] == "string" or tokens[tokens_current][0] == "double" or tokens[tokens_current][0] == "bool" or tokens[tokens_current][0] in symbol_table.keys():
-            Var()
-        while tokens[tokens_current][0] == ",":
-            Terminals(",")
-            Var()
+        if Var():
+            while tokens[tokens_current][0] == ",":
+                Terminals(",")
+                if not Var():
+                    return False 
         return True   
     def StmtBlock():
         if not Terminals("{"):
             return False
         while VariableDecl() or Stmt():
             print("Here1")
-        #while Stmt():
-        #    print("Here")
         if not Terminals("}"):
             return False
         else: 
             return True
     #Add other stmts 
     def Stmt():
+        if tokens[tokens_current][0] in symbol_table.keys() or tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][0] == "this" or tokens[tokens_current][0] == "new" or tokens[tokens_current][0] == "NewArray" or tokens[tokens_current][0] == "ReadInteger" or tokens[tokens_current][0] == "ReadLine" or tokens[tokens_current][0] == "!" or tokens[tokens_current][0] == "(" or tokens[tokens_current][0] == "-":
+            if not Expr():
+                return False
+            if not Terminals(";"):
+                return False
+            else:
+                return True
+        elif tokens[tokens_current][0] == "{":
+            if StmtBlock():
+                return True
+        elif tokens[tokens_current][0] == "while":
+            if WhileStmt():
+                return True
+        elif tokens[tokens_current][0] == "for":
+            if ForStmt():
+                return True
+        elif tokens[tokens_current][0] == "return":
+            if ReturnStmt():
+                return True
+        elif tokens[tokens_current][0] == "if":
+            if IfStmt():
+                return True
+        elif tokens[tokens_current][0] == "Print":
+            if PrintStmt():
+                return True
+        elif tokens[tokens_current][0] == "break":
+            if BreakStmt:
+                return True
+        else:
+            return False  
+    def WhileStmt():
+        if not Terminals("while"):
+            return False
+        if not Terminals("("):
+            return False
+        if not Expr():
+            return False
+        if not Terminals(")"):
+            return False
+        if not Stmt():
+            return False
+        else:
+            return True
+    #Needs to be re-tooled
+    def ForStmt():
+        if not Terminals("for"):
+            return False
+        if not Terminals("("):
+            return False
+        if Expr():
+            if not Terminals(";"):
+                return False
         if not Expr():
             return False
         if not Terminals(";"):
             return False
+        Expr()
+        if not Terminals(")"):
+            return False
+        if not Stmt():
+            return False
         else:
-            return True  
+            return True
+    def ReturnStmt():
+        if not Terminals("return"):
+            return False
+        Expr()
+        if not Terminals(";"):
+            return False
+        else:
+            return True
+    def IfStmt():
+        if not Terminals("if"):
+            return False
+        if not Terminals("("):
+            return False
+        if not Expr():
+            return False
+        if not Terminals(")"):
+            return False
+        if not Stmt():
+            return False
+        if Terminals("else"):
+            if not Stmt():
+                return False
+        else:
+            return True
+    def PrintStmt():
+        if not Terminals("Print"):
+            return False
+        if not Terminals("("):
+            return False
+        if not Expr():
+            return False
+        while tokens[tokens_current][0] == ",":
+            Terminals(",")
+            if not Expr():
+                return False
+        if not Terminals(")"):
+            return False
+        if not Terminals(";"):
+            return False
+        else:
+            return True
+    def BreakStmt():
+        if not Terminals("break"):
+            return False
+        if not Terminals(";"):
+            return False
+        else:
+            return True
     #Add the other Expr things  
     def Expr():
         if tokens[tokens_current][0] in symbol_table.keys():
             if not ident():
                 return False
-            if not Terminals("="):
-                return False
-            if not Expr():
-                return False
-            if not ExprPrime():
-                return False
+            if tokens[tokens_current][0] == "=":
+                if not Terminals("="):
+                    return False
+                if not Expr():
+                    return False
+                if not ExprPrime():
+                    return False
+                else:
+                    return True
+            elif tokens[tokens_current][0] == "(":
+                if not Terminals("("):
+                    return False
+                if not Actuals():
+                    return False
+                if not Terminals(")"):
+                    return False
+                if not ExprPrime():
+                    return False
+                else:
+                    return True
+            else:
+                if not ExprPrime():
+                    return False
+                else:
+                    return True
         #Add other constants
         if tokens[tokens_current][1] == "intConstant":
             print("Found a Cosntant")
             if not Constant():
                 return False
-        return True
-    
+            else: 
+                return True
+        return False
+    def Actuals():
+        if Expr():
+            while tokens[tokens_current] == ",":
+                Terminals(",")
+                if not Expr():
+                    return False
+        return True 
     #Add the other prime things
     def ExprPrime():
         return True
@@ -335,12 +469,11 @@ def main():
             return True
         else:
             return False
-    
-        #Add more robust checks for constants
+
     def Constant():
         global tokens_current
         print("Looking For " + "Constant" + " at " + str(tokens_current))
-        if tokens[tokens_current][1] == "intConstant":
+        if tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][1] == "doubleConstant" or tokens[tokens_current][1] == "boolConstant" or tokens[tokens_current][1] == "stringConstant":
             tokens_current = tokens_current + 1
             return True
         else:
