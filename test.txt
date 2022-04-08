@@ -7,3 +7,4 @@ this.breed = "unknown";
 this.color = "white";
 this.age = 0;
 }
+}
