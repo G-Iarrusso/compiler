@@ -1,20 +1,9 @@
-/*
 class Cat {
 string breed;
 string color;
 int age;
-Cat() {
+Dog new_cat () {
 this.breed = "unknown";
 this.color = "white";
 this.age = 0;
-}
-bobby = 15;
-tom = "scott
-*/
-int sport;
-string balls;
-string balls;
-void main () {
-    int sports;
-    sport = 1
 }
