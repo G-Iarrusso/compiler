@@ -241,8 +241,7 @@ def main():
         global tokens_current
         if not decl():
             return False
-        #Add options for class
-        while tokens[tokens_current][0] == "int" or tokens[tokens_current][0] == "string" or tokens[tokens_current][0] == "double" or tokens[tokens_current][0] == "bool" or tokens[tokens_current][0] == "void" or tokens[tokens_current][0] in symbol_table.keys():
+        while tokens[tokens_current][0] == "int" or tokens[tokens_current][0] == "string" or tokens[tokens_current][0] == "double" or tokens[tokens_current][0] == "bool" or tokens[tokens_current][0] == "void" or tokens[tokens_current][0] == "class" or tokens[tokens_current][0] in symbol_table.keys():
             decl()
         if tokens[tokens_current] == "$":
             return True
@@ -254,8 +253,71 @@ def main():
             return True
         if FunctionDecl():
             return True
+        if ClassDecl():
+            return True
+        if InterfaceDecl():
+            return True
         else:
             return False
+    def InterfaceDecl():
+        if not Terminals("interface"):
+            return False
+        if not ident():
+            return False
+        if not Terminals("{"):
+            return False
+        while Prototype():
+            print("Prototype loop")
+        if not Terminals("}"):
+            return False
+        else:
+            return True
+    def Prototype():
+        if not Terminals("void") and not Type():
+            return False
+        if not ident():
+            return False
+        if not Terminals("("):
+            return False
+        if not Formals():
+            return False
+        if not Terminals(")"):
+            return False
+        if not Terminals(";"):
+            return False
+        else:
+            return True
+    def ClassDecl():
+        if not Terminals("class"):
+            return False
+        if not ident():
+            return False
+        if tokens[tokens_current][0] == "extends":
+            if not Terminals("extends"):
+                return False
+            if not ident():
+                return False
+        if tokens[tokens_current][0] == "implements":
+            if not Terminals("implements"):
+                return False
+            if not ident():
+                return False
+            while tokens[tokens_current][0] == ",":
+                if not Terminals(","):
+                    return False
+                if not ident():
+                    return False
+        if not Terminals("{"):
+            return False
+        Field()
+        if not Terminals("}"):
+            return False
+        else:
+            return True
+    def Field():
+        while VariableDecl() or FunctionDecl():
+            print("Field")
+        return True
     def VariableDecl():
         if not Var():
             return False
@@ -292,8 +354,7 @@ def main():
         if not Terminals("}"):
             return False
         else: 
-            return True
-    #Add other stmts 
+            return True 
     def Stmt():
         if tokens[tokens_current][0] in symbol_table.keys() or tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][0] == "this" or tokens[tokens_current][0] == "new" or tokens[tokens_current][0] == "NewArray" or tokens[tokens_current][0] == "ReadInteger" or tokens[tokens_current][0] == "ReadLine" or tokens[tokens_current][0] == "!" or tokens[tokens_current][0] == "(" or tokens[tokens_current][0] == "-":
             if not Expr():
@@ -405,8 +466,7 @@ def main():
         if not Terminals(";"):
             return False
         else:
-            return True
-    #Add the other Expr things  
+            return True  
     def Expr():
         if tokens[tokens_current][0] in symbol_table.keys():
             if not ident():
@@ -520,7 +580,6 @@ def main():
                 return False
             else:
                 return True
-        #Add other constants
         elif tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][1] == "doubleConstant" or tokens[tokens_current][1] == "boolConstant" or tokens[tokens_current][1] == "stringConstant" or tokens[tokens_current][1] == "null":
             print("Found a Cosntant")
             if not Constant():
@@ -535,7 +594,6 @@ def main():
                 if not Expr():
                     return False
         return True 
-    #Add the other prime things
     def ExprPrime():
         if tokens[tokens_current][0] == "&&":
             if not Terminals("&&"):
