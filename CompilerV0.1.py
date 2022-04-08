@@ -48,14 +48,12 @@ def main():
     close_bracket = {")": "round","]": "square","}": "squigly"}
     c = "s"
 
-    def determine_error(is_unknown=False):
+    def determine_error():
         log_error("ERROR LEXEME IS: " + lexeme)
         if not(lexeme[0] == '"' and lexeme[-1] == '"') and '"' in lexeme:
             log_error("ERROR: Invalid String\n")
         elif "." in lexeme:
             log_error("ERROR: Invalid Double\n")
-        elif is_unknown:
-            log_error("UNKNOWN ERROR duplicate declaration\n")
         elif lexeme not in symbol_table.keys():
             log_error("UNKNOWN SYMBOL\n")
         elif not lexeme.isnumeric():
@@ -133,6 +131,7 @@ def main():
     line_num = 1
 
     while token != "eof":
+        print(lexeme)
         if cnt<len(buffer1):
             token = buffer1[cnt]
         if cnt>=len(buffer1):
