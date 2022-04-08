@@ -11,10 +11,10 @@ this.age = 0;
 bobby = 15;
 tom = "scott
 */
-int cock;
+int sport;
 string balls;
-
+string balls;
 void main () {
-    int peg_me;
-    cock = 1;
+    int sports;
+    sport = 1
 }
