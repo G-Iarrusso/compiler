@@ -15,6 +15,6 @@ int sport;
 string balls;
 string balls;
 void main () {
-    int sports;
-    sport = 1
+    int sports
+    sport = 1;
 }

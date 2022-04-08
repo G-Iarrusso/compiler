@@ -237,24 +237,26 @@ def main():
         global tokens_current
         if not decl():
             return False
-        while tokens[tokens_current][0] == "int" or tokens[tokens_current][0] == "string" or tokens[tokens_current][0] == "double" or tokens[tokens_current][0] == "bool" or tokens[tokens_current][0] == "void" or tokens[tokens_current][0] == "class" or tokens[tokens_current][0] in symbol_table.keys():
-            decl()
+        while decl():
+            print("Start of Program")
         if tokens[tokens_current] == "$":
             return True
         else:
             return False
     #Add other Declarations
     def decl():
+        print("Current Token: " + tokens[tokens_current][0])
         if VariableDecl():
             return True
         if FunctionDecl():
             return True
-        if ClassDecl():
-            return True
-        if InterfaceDecl():
-            return True
-        else:
-            return False
+        if tokens[tokens_current][0] == "class":
+            if ClassDecl():
+                return True
+        if tokens[tokens_current][0] == "interface":
+            if InterfaceDecl():
+                return True
+        return False
     def InterfaceDecl():
         if not Terminals("interface"):
             return False
@@ -262,27 +264,34 @@ def main():
             return False
         if not Terminals("{"):
             return False
-        while Prototype():
-            print("Prototype loop")
+        while True:
+            troupleProto = Prototype()
+            if troupleProto == 0:
+                break
+            elif troupleProto == -1:
+                return False
         if not Terminals("}"):
             return False
         else:
             return True
     def Prototype():
-        if not Terminals("void") and not Type():
-            return False
-        if not ident():
-            return False
-        if not Terminals("("):
-            return False
-        if not Formals():
-            return False
-        if not Terminals(")"):
-            return False
-        if not Terminals(";"):
-            return False
+        if tokens[tokens_current][0]!="}":
+            if not Terminals("void") and not Type():
+                return -1
+            if not ident():
+                return -1
+            if not Terminals("("):
+                return -1
+            if not Formals():
+                return -1
+            if not Terminals(")"):
+                return -1
+            if not Terminals(";"):
+                return -1
+            else:
+                return 1
         else:
-            return True
+            return 0
     def ClassDecl():
         if not Terminals("class"):
             return False
@@ -305,15 +314,22 @@ def main():
                     return False
         if not Terminals("{"):
             return False
-        Field()
+        while True:
+            troupleField = Field()
+            if troupleField == 0:
+                break
+            elif troupleField == -1:
+                return False
         if not Terminals("}"):
             return False
         else:
             return True
     def Field():
-        while VariableDecl() or FunctionDecl():
-            print("Field")
-        return True
+        if tokens[tokens_current][0] == "int" or tokens[tokens_current][0] == "string" or tokens[tokens_current][0] == "double" or tokens[tokens_current][0] == "bool" or tokens[tokens_current][0] == "void" or tokens[tokens_current][0] in symbol_table.keys():
+            if not VariableDecl and not FunctionDecl():
+                return -1
+        else:
+            return 0
     def VariableDecl():
         if not Var():
             return False
@@ -341,14 +357,29 @@ def main():
                 Terminals(",")
                 if not Var():
                     return False 
-        return True   
+        return True 
+    def VariableDeclAux():
+        if not Var():
+            return 0
+        if not Terminals(";"):
+            return -1
+        return 1
+
     def StmtBlock():
         if not Terminals("{"):
             return False
-        while VariableDecl():
-            print("Here1")
-        while Stmt():
-            print("Here2")
+        while True:
+            troupleVar = VariableDeclAux()
+            if troupleVar == -1:
+                return False
+            elif troupleVar == 0:
+                break
+        while True:
+            trouple = Stmt()
+            if trouple == 0:
+                break
+            elif trouple == -1:
+                return False
         if not Terminals("}"):
             return False
         else: 
@@ -356,37 +387,49 @@ def main():
     def Stmt():
         print("Found a statement")
         if tokens[tokens_current][0] in symbol_table.keys() or tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][0] == "this" or tokens[tokens_current][0] == "new" or tokens[tokens_current][0] == "NewArray" or tokens[tokens_current][0] == "ReadInteger" or tokens[tokens_current][0] == "ReadLine" or tokens[tokens_current][0] == "!" or tokens[tokens_current][0] == "(" or tokens[tokens_current][0] == "-":
-            print("Needs and Expression")
             if not Expr():
-                return False
-            print("Expression found")
+                return -1
             if not Terminals(";"):
-                return False
+                return -1
             else:
                 return True
         elif tokens[tokens_current][0] == "{":
             if StmtBlock():
                 return True
+            else:
+                return -1
         elif tokens[tokens_current][0] == "while":
             if WhileStmt():
                 return True
+            else:
+                return -1
         elif tokens[tokens_current][0] == "for":
             if ForStmt():
                 return True
+            else:
+                return -1
         elif tokens[tokens_current][0] == "return":
             if ReturnStmt():
                 return True
+            else:
+                return -1
         elif tokens[tokens_current][0] == "if":
             if IfStmt():
                 return True
+            else:
+                return -1
         elif tokens[tokens_current][0] == "Print":
             if PrintStmt():
                 return True
+            else:
+                -1
         elif tokens[tokens_current][0] == "break":
             if BreakStmt:
                 return True
+            else:
+                return -1
         else:
-            return False  
+            return 0  
     def WhileStmt():
         if not Terminals("while"):
             return False
@@ -468,6 +511,7 @@ def main():
             return False
         else:
             return True  
+    
     def Expr():
         print("Here from statement")
         if tokens[tokens_current][0] in symbol_table.keys():
@@ -731,6 +775,7 @@ def main():
         global tokens_current
         print("Looking For " + "Constant" + " at " + str(tokens_current))
         if tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][1] == "doubleConstant" or tokens[tokens_current][1] == "boolConstant" or tokens[tokens_current][1] == "stringConstant" or tokens[tokens_current][1] == "null":
+            print("Found" + tokens[tokens_current][0] + " at " + str(tokens_current))
             tokens_current = tokens_current + 1
             return True
         else:
@@ -740,6 +785,7 @@ def main():
         global tokens_current
         print("Looking For " + terminal + " at " + str(tokens_current))
         if tokens[tokens_current][0] == terminal:
+            print("Found" + tokens[tokens_current][0] + " at " + str(tokens_current))
             tokens_current = tokens_current + 1
             return True
         else: 
@@ -748,6 +794,7 @@ def main():
         global tokens_current
         print("Looking For " + tokens[tokens_current][0] + " at " + str(tokens_current))
         if tokens[tokens_current][0] in symbol_table.keys():
+            print("Found" + tokens[tokens_current][0] + " at " + str(tokens_current))
             tokens_current = tokens_current + 1
             return True
         else: 
@@ -795,7 +842,7 @@ def main():
                     ["ExprMulti",["ExprMulti","Expr"],["ExprMulti","Expr"],["ExprMulti","Expr"],["ExprMulti","Expr"],["ExprMulti","Expr"],"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon",["ExprMulti","Expr"],"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon",["ExprMulti","Expr"],["ExprMulti","Expr"],"/epsilon",["ExprMulti","Expr"],["ExprMulti","Expr"],"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon",["ExprMulti","Expr"],["ExprMulti",","],"/epsilon","/epsilon","/epsilon",["ExprMulti","Expr"],"/epsilon","/epsilon",["ExprMulti","Expr"],"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon""/epsilon","/epsilon","/epsilon"],
                     ["Actuals","ExprMulti","ExprMulti","ExprMulti","ExprMulti","ExprMulti",None,None,None,None,None,None,None,None,"ExprMulti",None,None,None,None,None,None,None,None,"ExprMulti","ExprMulti",None,"ExprMulti","ExprMulti",None,None,None,None,None,"ExprMulti",None,None,None,None,"ExprMulti",None,None,"ExprMulti",None,None,None,None,None,None,None,None,None,None,None,None,None],
                     ["Constant",None, "intConstant","doubleConstant","boolConstant","stringConstant","null",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None]]     
-    #output = program()
-    #print(output)
+    output = program()
+    print(output)
 if __name__ == "__main__":
     main()
