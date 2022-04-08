@@ -537,8 +537,117 @@ def main():
         return True 
     #Add the other prime things
     def ExprPrime():
-        
-        return True
+        if tokens[tokens_current][0] == "&&":
+            if not Terminals("&&"):
+                return False
+            if not Expr():
+                return False
+            ExprPrime()
+        elif tokens[tokens_current][0] == "||":
+            if not Terminals("||"):
+                return False
+            if not Expr():
+                return False
+            ExprPrime()
+        elif tokens[tokens_current][0] == ".":
+            if not Terminals("."):
+                return False
+            if not ident():
+                return False
+            if tokens[tokens_current][0] == "=":
+                if not Terminals("="):
+                    return False
+                if not ident():
+                    return False
+            elif tokens[tokens_current][0] == "(":
+                if not Terminals("("):
+                    return False
+                if not Actuals():
+                    return False
+                if not Terminals(")"):
+                    return False
+            ExprPrime()
+        elif tokens[tokens_current][0] == "[":
+            if not Terminals("["):
+                return False
+            if not Expr():
+                return False
+            if not Terminals("]"):
+                return False
+            if tokens[tokens_current][0] == "=":
+                if not Terminals("="):
+                    return False
+                if not Expr():
+                    return False
+            ExprPrime()
+        elif tokens[tokens_current][0] == "+":
+            if not Terminals("+"):
+                return False
+            if not Expr():
+                return False  
+            ExprPrime()  
+        elif tokens[tokens_current][0] == "-":
+            if not Terminals("-"):
+                return False
+            if not Expr():
+                return False
+            ExprPrime()  
+        elif tokens[tokens_current][0] == "*":
+            if not Terminals("*"):
+                return False
+            if not Expr():
+                return False 
+            ExprPrime() 
+        elif tokens[tokens_current][0] == "/":
+            if not Terminals("/"):
+                return False
+            if not Expr():
+                return False
+            ExprPrime()
+        elif tokens[tokens_current][0] == "%":
+            if not Terminals("%"):
+                return False
+            if not Expr():
+                return False
+            ExprPrime()
+        elif tokens[tokens_current][0] == "<":
+            if not Terminals("<"):
+                return False
+            if not Expr():
+                return False
+            ExprPrime()
+        elif tokens[tokens_current][0] == "<=":
+            if not Terminals("<="):
+                return False
+            if not Expr():
+                return False
+            ExprPrime()
+        elif tokens[tokens_current][0] == ">":
+            if not Terminals(">"):
+                return False
+            if not Expr():
+                return False
+            ExprPrime()
+        elif tokens[tokens_current][0] == ">=":
+            if not Terminals(">="):
+                return False
+            if not Expr():
+                return False
+            ExprPrime()
+        elif tokens[tokens_current][0] == "==":
+            if not Terminals("=="):
+                return False
+            if not Expr():
+                return False
+            ExprPrime()
+        elif tokens[tokens_current][0] == "!=":
+            if not Terminals("!="):
+                return False
+            if not Expr():
+                return False
+            ExprPrime()
+        else:
+            return True
 
     def Var():
         if not Type():
