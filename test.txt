@@ -16,5 +16,5 @@ string balls;
 
 void main () {
     int peg_me;
-    cock = 1;
+    cock = 1
 }

@@ -349,16 +349,21 @@ def main():
     def StmtBlock():
         if not Terminals("{"):
             return False
-        while VariableDecl() or Stmt():
+        while VariableDecl():
             print("Here1")
+        while Stmt():
+            print("Here2")
         if not Terminals("}"):
             return False
         else: 
             return True 
     def Stmt():
+        print("Found a statement")
         if tokens[tokens_current][0] in symbol_table.keys() or tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][0] == "this" or tokens[tokens_current][0] == "new" or tokens[tokens_current][0] == "NewArray" or tokens[tokens_current][0] == "ReadInteger" or tokens[tokens_current][0] == "ReadLine" or tokens[tokens_current][0] == "!" or tokens[tokens_current][0] == "(" or tokens[tokens_current][0] == "-":
+            print("Needs and Expression")
             if not Expr():
                 return False
+            print("Expression found")
             if not Terminals(";"):
                 return False
             else:
@@ -468,14 +473,18 @@ def main():
         else:
             return True  
     def Expr():
+        print("Here from statement")
         if tokens[tokens_current][0] in symbol_table.keys():
             if not ident():
                 return False
             if tokens[tokens_current][0] == "=":
+                print("Have an equals")
                 if not Terminals("="):
                     return False
+                print("Found Equals")
                 if not Expr():
                     return False
+                print("Found our expression")
                 if not ExprPrime():
                     return False
                 else:
