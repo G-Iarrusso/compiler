@@ -70,7 +70,7 @@ def main():
             print("Do nothing for now")
         #Unkonwn identifyer and previous was not a keyword
         #Most likely two literals following each other
-        elif lexeme not in symbol_table.keys() and (prev not in keywords) and lexeme != "" :
+        elif lexeme not in symbol_table.keys() and lexeme != "" :
             if integer_regex.fullmatch(lexeme):
                 print("integer lexeme:" + lexeme)
                 read_order.append([lexeme, "intConstant", line_num])
@@ -80,13 +80,7 @@ def main():
             elif string_regex.fullmatch(lexeme):
                 print("string lexeme:" + lexeme)
                 read_order.append([lexeme, "stringConstant", line_num])
-            else:
-                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
-                determine_error()
-        
-        #New identifier 
-        elif lexeme not in symbol_table.keys() and  prev in declarators and lexeme != "":
-            if variable_regex.fullmatch(lexeme) != None:
+            elif variable_regex.fullmatch(lexeme) != None:
                 print("compare variables")
                 print(lexeme)
                 symbol_table[lexeme] = prev
@@ -94,7 +88,6 @@ def main():
             else:
                 log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
                 log_error("ERROR not a valid Variable: "+ lexeme)
-
             print("\nSymbol Table:")
             print(symbol_table.keys())
             print("")
@@ -131,7 +124,6 @@ def main():
     line_num = 1
 
     while token != "eof":
-        print(lexeme)
         if cnt<len(buffer1):
             token = buffer1[cnt]
         if cnt>=len(buffer1):
