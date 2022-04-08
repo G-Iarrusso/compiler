@@ -306,7 +306,6 @@ def main():
         if not Terminals("{"):
             return False
         while True:
-            #print("Looking for in field " + tokens[tokens_current][0])
             troupleField = Field()
             if troupleField == 0:
                 break
@@ -317,11 +316,28 @@ def main():
         else:
             return True
     def Field():
-        if tokens[tokens_current][0] == "int" or tokens[tokens_current][0] == "string" or tokens[tokens_current][0] == "double" or tokens[tokens_current][0] == "bool" or tokens[tokens_current][0] == "void" or tokens[tokens_current][0] in symbol_table.keys():
-            if not VariableDecl() and not FunctionDecl():
+        if tokens[tokens_current][0] == "int" or tokens[tokens_current][0] == "string" or tokens[tokens_current][0] == "double" or tokens[tokens_current][0] == "bool" or tokens[tokens_current][0] in symbol_table.keys():
+            state = VariableDeclAux2()
+            if state == -1:
+                return -1
+            if state == 1:
+                return 1
+            
+        if tokens[tokens_current][0] == "int" or tokens[tokens_current][0] == "string" or tokens[tokens_current][0] == "double" or tokens[tokens_current][0] == "bool" or tokens[tokens_current][0] == "void" or tokens[tokens_current][0] in symbol_table.keys():    
+            if FunctionDecl():
+                return 1
+            else:
                 return -1
         else:
             return 0
+    def VariableDeclAux2(is_ident = False):
+        global tokens_current
+        if not Var():
+            return -1
+        if not Terminals(";"):
+            tokens_current = tokens_current - 2
+            return 0
+        return 1
     def VariableDecl():
         if not Var():
             return False
@@ -372,7 +388,6 @@ def main():
                 return False
             elif troupleVar == 0:
                 break
-        print("After Variable Mess " + tokens[tokens_current][0])
         while True:
             trouple = Stmt()
             if trouple == 0:
@@ -385,7 +400,7 @@ def main():
             return True 
     def Stmt():
         print("Found a statement")
-        if tokens[tokens_current][0] in symbol_table.keys() or tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][0] == "this" or tokens[tokens_current][0] == "new" or tokens[tokens_current][0] == "NewArray" or tokens[tokens_current][0] == "ReadInteger" or tokens[tokens_current][0] == "ReadLine" or tokens[tokens_current][0] == "!" or tokens[tokens_current][0] == "(" or tokens[tokens_current][0] == "-":
+        if tokens[tokens_current][0] in symbol_table.keys() or "Constant" in tokens[tokens_current][1] or tokens[tokens_current][0] == "this" or tokens[tokens_current][0] == "new" or tokens[tokens_current][0] == "NewArray" or tokens[tokens_current][0] == "ReadInteger" or tokens[tokens_current][0] == "ReadLine" or tokens[tokens_current][0] == "!" or tokens[tokens_current][0] == "(" or tokens[tokens_current][0] == "-":
             if not Expr():
                 print("Oops no expression")
                 return -1
@@ -514,7 +529,7 @@ def main():
     
     def Expr():
         print("Here from statement")
-        if tokens[tokens_current][0] in symbol_table.keys():
+        if tokens[tokens_current][0] in symbol_table.keys() and ("Constant" not in tokens[tokens_current][1]):
             if not ident():
                 return False
             if tokens[tokens_current][0] == "=":
@@ -664,7 +679,7 @@ def main():
             if tokens[tokens_current][0] == "=":
                 if not Terminals("="):
                     return False
-                if not ident():
+                if not Expr():
                     return False
             elif tokens[tokens_current][0] == "(":
                 if not Terminals("("):
