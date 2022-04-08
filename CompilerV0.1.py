@@ -48,14 +48,12 @@ def main():
     close_bracket = {")": "round","]": "square","}": "squigly"}
     c = "s"
 
-    def determine_error(is_unknown=False):
+    def determine_error():
         log_error("ERROR LEXEME IS: " + lexeme)
         if not(lexeme[0] == '"' and lexeme[-1] == '"') and '"' in lexeme:
             log_error("ERROR: Invalid String\n")
         elif "." in lexeme:
             log_error("ERROR: Invalid Double\n")
-        elif is_unknown:
-            log_error("UNKNOWN ERROR duplicate declaration\n")
         elif lexeme not in symbol_table.keys():
             log_error("UNKNOWN SYMBOL\n")
         elif not lexeme.isnumeric():
@@ -67,36 +65,29 @@ def main():
         #Most likely used in semantic analysis
         if lexeme in symbol_table.keys():
             #Do nothing for right now
-            read_order.append([lexeme, symbol_table.get(lexeme)])
+            read_order.append([lexeme, symbol_table.get(lexeme), line_num])
             print(lexeme)
             print("Do nothing for now")
         #Unkonwn identifyer and previous was not a keyword
         #Most likely two literals following each other
-        elif lexeme not in symbol_table.keys() and (prev not in keywords) and lexeme != "" :
+        elif lexeme not in symbol_table.keys() and lexeme != "" :
             if integer_regex.fullmatch(lexeme):
                 print("integer lexeme:" + lexeme)
-                read_order.append([lexeme, "intConstant"])
+                read_order.append([lexeme, "intConstant", line_num])
             elif double_regex.fullmatch(lexeme):
                 print("double lexeme:" + lexeme)
-                read_order.append([lexeme, "doubleConstant"])
+                read_order.append([lexeme, "doubleConstant", line_num])
             elif string_regex.fullmatch(lexeme):
                 print("string lexeme:" + lexeme)
-                read_order.append([lexeme, "stringConstant"])
-            else:
-                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
-                determine_error()
-        
-        #New identifier 
-        elif lexeme not in symbol_table.keys() and  prev in declarators and lexeme != "":
-            if variable_regex.fullmatch(lexeme) != None:
+                read_order.append([lexeme, "stringConstant", line_num])
+            elif variable_regex.fullmatch(lexeme) != None:
                 print("compare variables")
                 print(lexeme)
                 symbol_table[lexeme] = prev
-                read_order.append([lexeme, symbol_table.get(lexeme)])
+                read_order.append([lexeme, symbol_table.get(lexeme), line_num])
             else:
                 log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
                 log_error("ERROR not a valid Variable: "+ lexeme)
-
             print("\nSymbol Table:")
             print(symbol_table.keys())
             print("")
@@ -194,22 +185,22 @@ def main():
         elif (token == " " and '"' not in lexeme)or token=="eof" or token== ";" or token == ".":
 
             if (lexeme in keywords):
-                read_order.append([lexeme, "Keyword"])
+                read_order.append([lexeme, "Keyword", line_num])
                 if token == ".":
-                    read_order.append([token, "operator"])
+                    read_order.append([token, "operator", line_num])
                 prev = lexeme 
             elif (lexeme in operators):
-                read_order.append([lexeme, "Operator"])
+                read_order.append([lexeme, "Operator", line_num])
                 prev = lexeme 
             elif lexeme !="":
                 handle_lexeme()
                 prev = lexeme 
             if token == ";":
-                read_order.append([";", "Operator"])
+                read_order.append([";", "Operator", line_num])
             lexeme = ""
         elif token in operators and '"' not in lexeme:
             handle_lexeme()
-            read_order.append([token, "Operator"])
+            read_order.append([token, "Operator", line_num])
             prev = lexeme 
             lexeme = ""
         elif token == '"' and '"' in lexeme:
