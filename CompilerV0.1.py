@@ -9,8 +9,6 @@ from queue import Empty
 import re
 from tkinter import Variable
 
-from sympy import false
-
 output = open("error_log.txt", "w")
 output.write("Decaf Error Stack Trace\n")
 output.close()
@@ -69,9 +67,6 @@ def main():
         #Most likely used in semantic analysis
         if lexeme in symbol_table.keys():
             #Do nothing for right now
-            if prev == symbol_table[lexeme] or prev in declarators:
-                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
-                determine_error(True)
             read_order.append([lexeme, symbol_table.get(lexeme)])
             print(lexeme)
             print("Do nothing for now")
@@ -188,6 +183,7 @@ def main():
             elif lexeme != "":
                 log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
                 log_error("UNKNOWN ERROR broken line:" + lexeme)
+                handle_lexeme()
             prev = lexeme 
             lexeme = ""
             line_num = line_num + 1
@@ -790,7 +786,7 @@ def main():
                     ["ExprMulti",["ExprMulti","Expr"],["ExprMulti","Expr"],["ExprMulti","Expr"],["ExprMulti","Expr"],["ExprMulti","Expr"],"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon",["ExprMulti","Expr"],"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon",["ExprMulti","Expr"],["ExprMulti","Expr"],"/epsilon",["ExprMulti","Expr"],["ExprMulti","Expr"],"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon",["ExprMulti","Expr"],["ExprMulti",","],"/epsilon","/epsilon","/epsilon",["ExprMulti","Expr"],"/epsilon","/epsilon",["ExprMulti","Expr"],"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon""/epsilon","/epsilon","/epsilon"],
                     ["Actuals","ExprMulti","ExprMulti","ExprMulti","ExprMulti","ExprMulti",None,None,None,None,None,None,None,None,"ExprMulti",None,None,None,None,None,None,None,None,"ExprMulti","ExprMulti",None,"ExprMulti","ExprMulti",None,None,None,None,None,"ExprMulti",None,None,None,None,"ExprMulti",None,None,"ExprMulti",None,None,None,None,None,None,None,None,None,None,None,None,None],
                     ["Constant",None, "intConstant","doubleConstant","boolConstant","stringConstant","null",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None]]     
-    output = program()
-    print(output)
+    #output = program()
+    #print(output)
 if __name__ == "__main__":
     main()
