@@ -315,6 +315,7 @@ def main():
         if not Terminals("{"):
             return False
         while True:
+            #print("Looking for in field " + tokens[tokens_current][0])
             troupleField = Field()
             if troupleField == 0:
                 break
@@ -326,7 +327,7 @@ def main():
             return True
     def Field():
         if tokens[tokens_current][0] == "int" or tokens[tokens_current][0] == "string" or tokens[tokens_current][0] == "double" or tokens[tokens_current][0] == "bool" or tokens[tokens_current][0] == "void" or tokens[tokens_current][0] in symbol_table.keys():
-            if not VariableDecl and not FunctionDecl():
+            if not VariableDecl() and not FunctionDecl():
                 return -1
         else:
             return 0
@@ -358,8 +359,11 @@ def main():
                 if not Var():
                     return False 
         return True 
-    def VariableDeclAux():
+    def VariableDeclAux(is_ident = False):
+        global tokens_current
         if not Var():
+            if is_ident:
+                tokens_current = tokens_current - 1
             return 0
         if not Terminals(";"):
             return -1
@@ -369,11 +373,15 @@ def main():
         if not Terminals("{"):
             return False
         while True:
-            troupleVar = VariableDeclAux()
+            if tokens[tokens_current][0] in symbol_table.keys():
+                troupleVar = VariableDeclAux(is_ident = True)
+            else:
+                troupleVar = VariableDeclAux()
             if troupleVar == -1:
                 return False
             elif troupleVar == 0:
                 break
+        print("After Variable Mess " + tokens[tokens_current][0])
         while True:
             trouple = Stmt()
             if trouple == 0:
@@ -388,6 +396,7 @@ def main():
         print("Found a statement")
         if tokens[tokens_current][0] in symbol_table.keys() or tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][0] == "this" or tokens[tokens_current][0] == "new" or tokens[tokens_current][0] == "NewArray" or tokens[tokens_current][0] == "ReadInteger" or tokens[tokens_current][0] == "ReadLine" or tokens[tokens_current][0] == "!" or tokens[tokens_current][0] == "(" or tokens[tokens_current][0] == "-":
             if not Expr():
+                print("Oops no expression")
                 return -1
             if not Terminals(";"):
                 return -1
@@ -649,13 +658,13 @@ def main():
                 return False
             if not Expr():
                 return False
-            ExprPrime()
+            return ExprPrime()
         elif tokens[tokens_current][0] == "||":
             if not Terminals("||"):
                 return False
             if not Expr():
                 return False
-            ExprPrime()
+            return ExprPrime()
         elif tokens[tokens_current][0] == ".":
             if not Terminals("."):
                 return False
@@ -673,7 +682,7 @@ def main():
                     return False
                 if not Terminals(")"):
                     return False
-            ExprPrime()
+            return ExprPrime()
         elif tokens[tokens_current][0] == "[":
             if not Terminals("["):
                 return False
@@ -686,73 +695,73 @@ def main():
                     return False
                 if not Expr():
                     return False
-            ExprPrime()
+            return ExprPrime()
         elif tokens[tokens_current][0] == "+":
             if not Terminals("+"):
                 return False
             if not Expr():
                 return False  
-            ExprPrime()  
+            return ExprPrime() 
         elif tokens[tokens_current][0] == "-":
             if not Terminals("-"):
                 return False
             if not Expr():
                 return False
-            ExprPrime()  
+            return ExprPrime()  
         elif tokens[tokens_current][0] == "*":
             if not Terminals("*"):
                 return False
             if not Expr():
                 return False 
-            ExprPrime() 
+            return ExprPrime()
         elif tokens[tokens_current][0] == "/":
             if not Terminals("/"):
                 return False
             if not Expr():
                 return False
-            ExprPrime()
+            return ExprPrime()
         elif tokens[tokens_current][0] == "%":
             if not Terminals("%"):
                 return False
             if not Expr():
                 return False
-            ExprPrime()
+            return ExprPrime()
         elif tokens[tokens_current][0] == "<":
             if not Terminals("<"):
                 return False
             if not Expr():
                 return False
-            ExprPrime()
+            return ExprPrime()
         elif tokens[tokens_current][0] == "<=":
             if not Terminals("<="):
                 return False
             if not Expr():
                 return False
-            ExprPrime()
+            return ExprPrime()
         elif tokens[tokens_current][0] == ">":
             if not Terminals(">"):
                 return False
             if not Expr():
                 return False
-            ExprPrime()
+            return ExprPrime()
         elif tokens[tokens_current][0] == ">=":
             if not Terminals(">="):
                 return False
             if not Expr():
                 return False
-            ExprPrime()
+            return ExprPrime()
         elif tokens[tokens_current][0] == "==":
             if not Terminals("=="):
                 return False
             if not Expr():
                 return False
-            ExprPrime()
+            return ExprPrime()
         elif tokens[tokens_current][0] == "!=":
             if not Terminals("!="):
                 return False
             if not Expr():
                 return False
-            ExprPrime()
+            return ExprPrime()
         else:
             return True
 
@@ -765,11 +774,26 @@ def main():
    
     def Type():
         if Terminals("int"):
-            return True
+            return TypePrime()
         if Terminals("string"):
-            return True
+            return TypePrime()
+        if Terminals("bool"):
+            return TypePrime()
+        if Terminals("double"):
+            return TypePrime()
+        if ident():
+            return TypePrime()
         else:
             return False
+    def TypePrime():
+        if tokens[tokens_current][0] == "[":
+            if not Terminals("["):
+                return False
+            if not Terminals("]"):
+                return False
+            return TypePrime()
+        else:
+            return True
 
     def Constant():
         global tokens_current
