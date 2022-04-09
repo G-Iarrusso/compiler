@@ -161,7 +161,6 @@ def main():
                     line_num = line_num + 1
             elif token == "eof":
                 log_error("ERROR on line number: " + str(line_num))
-                log_error("ERROR origin: " + lines[line_num-1][:-1])
                 log_error("ERROR: no closing comment")
             elif token == "\n":
                 line_num = line_num + 1
@@ -172,8 +171,6 @@ def main():
             if "//" in lexeme:
                 print("comment complete")
             elif lexeme != "":
-                log_error("ERROR on line " + str(line_num) + ": " + lines[line_num-1][:-1])
-                log_error("UNKNOWN ERROR broken line:" + lexeme)
                 handle_lexeme()
             prev = lexeme 
             lexeme = ""
