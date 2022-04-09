@@ -874,12 +874,13 @@ def main():
                     ["Constant",None, "intConstant","doubleConstant","boolConstant","stringConstant","null",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None]]     
     output = program()
     if not output:
-        error_line = "Line in Question:"
+        error_line = "Line in Question: "
         line = tokens[tokens_current-1][2]
         log_error("SYNTAX ERROR ON LINE " + str(tokens[tokens_current-1][2]))
-        for item in tokens:
-            if item[2] == line:
-                error_line = error_line  + " "+ str(item[0])
+        if lines[line][-2:] == "\n":
+            error_line = error_line + lines[line-1][0:-2]
+        else:
+            error_line = error_line + lines[line-1]
         log_error(error_line)
     print(output) 
 if __name__ == "__main__":
