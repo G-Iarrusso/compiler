@@ -1,10 +1,11 @@
+//hello
 class Cat {
 string breed;
 string color;
 int age;
-Dog new_cat () {
+Cat new_cat () {
 this.breed = "unknown";
 this.color = "white";
-this.age = 0;
+this.age = 0
 }
 }
