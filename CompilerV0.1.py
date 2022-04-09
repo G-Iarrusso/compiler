@@ -216,7 +216,7 @@ def main():
     print(symbol_table)
 
     #Start of Parser-------------------------------------------------------------------------------------------------------------------------------------
-    read_order.append("$")
+    read_order.append(["$","eof",line_num])
     global tokens
     global tokens_current
 
@@ -230,7 +230,7 @@ def main():
             return False
         while decl():
             print("Start of Program")
-        if tokens[tokens_current] == "$":
+        if tokens[tokens_current][0] == "$":
             return True
         else:
             return False
@@ -873,6 +873,14 @@ def main():
                     ["Actuals","ExprMulti","ExprMulti","ExprMulti","ExprMulti","ExprMulti",None,None,None,None,None,None,None,None,"ExprMulti",None,None,None,None,None,None,None,None,"ExprMulti","ExprMulti",None,"ExprMulti","ExprMulti",None,None,None,None,None,"ExprMulti",None,None,None,None,"ExprMulti",None,None,"ExprMulti",None,None,None,None,None,None,None,None,None,None,None,None,None],
                     ["Constant",None, "intConstant","doubleConstant","boolConstant","stringConstant","null",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None]]     
     output = program()
-    print(output)
+    if not output:
+        error_line = "Line in Question:"
+        line = tokens[tokens_current-1][2]
+        log_error("SYNTAX ERROR ON LINE " + str(tokens[tokens_current-1][2]))
+        for item in tokens:
+            if item[2] == line:
+                error_line = error_line  + " "+ str(item[0])
+        log_error(error_line)
+    print(output) 
 if __name__ == "__main__":
     main()
