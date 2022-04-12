@@ -968,7 +968,7 @@ def parser(symbol_table, read_order, line_num, lines):
         print("Looking For " + tokens[tokens_current][0] + " at " + str(tokens_current))
         if tokens[tokens_current][0] in symbol_table.keys():
             print("Found" + tokens[tokens_current][0] + " at " + str(tokens_current))
-            temp = Node(tokens[tokens_current][0],root)
+            temp = Node(tokens[tokens_current][0],root,line_num=tokens[tokens_current][2])
             root.parent = parentprime
             tokens_current = tokens_current + 1
             print("Now Looking for " + tokens[tokens_current][0] + " at " + str(tokens_current))
@@ -1034,10 +1034,12 @@ def semantic(ast,symbol_table):
         #finds if something is a duplicate and if not adds to scope for variable declerations
         if node.name == "Variable":
             dupee = False
+            print(node.children[1].children[0])
             symbol = node.children[1].children[0].name
             for entry in scope_stack:
                 if entry[0] == symbol and entry[1] == scope:
-                    print("Duplicate Declaration: " + symbol) 
+                    log_error("SEMANTIC ERROR ON LINE "+str(node.children[1].children[0].line_num))
+                    log_error("Duplicate Declaration: " + symbol) 
                     dupee = True   
             if dupee != True:    
                 scope_stack.append([symbol,scope])
@@ -1048,7 +1050,8 @@ def semantic(ast,symbol_table):
             symbol = node.children[1].children[0].name
             for entry in scope_stack:
                 if entry[0] == symbol and entry[1] == scope:
-                    print("Duplicate Declaration: " + symbol) 
+                    log_error("SEMANTIC ERROR ON LINE "+str(node.children[1].children[0].line_num))
+                    log_error("Duplicate Declaration: " + symbol) 
                     dupee = True   
             if dupee != True:    
                 scope_stack.append([symbol,scope])
@@ -1077,12 +1080,14 @@ def semantic(ast,symbol_table):
                 if entry[0] == symbol2 and (entry[1] == scope or entry[1] == 0): 
                     found = True 
             if found != True:
-                print("Undeclared Identifier: " + symbol2)
+                log_error("SEMANTIC ERROR ON LINE "+str(node.children[0].line_num))
+                log_error("Undeclared Identifier: " + symbol2)
     has_main = False
     for item in symbol_table:
         if item[0] == "main":
             has_main = True
     if has_main == False:
+        log_error("SEMANTIC ERROR ON LINE "+str(0))
         print("Error No Main Function")
     
 
@@ -1093,9 +1098,18 @@ if __name__ == "__main__":
     if flag:
         ast = parser(symbol_table, read_order, line_num, lines)
         if flag:
-            print("Calling Semantic")
-            semantic(ast,symbol_table)
-            print("Done Semanitc")
+            semantic(ast, symbol_table)
+            if flag:
+                #call intermediate
+                print()
+                if flag:
+                    log_error("No Errors, Compiled Correctly")
+                else:
+                    log_error("Failed On Intermediate Code Representation Step")
+                    log_error("Will Not Complete Compile")
+            else:
+                log_error("Failed On Semantic Analyzer Step")
+                log_error("Will Not Advance To Intermediate Code Representation Step")
         else:
             log_error("Failed On Syntax Analyzer Step")
             log_error("Will Not Advance To Semantic Analyzer Step")
