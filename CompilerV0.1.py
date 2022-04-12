@@ -8,6 +8,7 @@ from cmath import log
 from queue import Empty
 import re
 from tkinter import Variable
+from anytree import Node, RenderTree, AsciiStyle, PreOrderIter
 
 output = open("error_log.txt", "w")
 output.write("Decaf Error Stack Trace\n")
@@ -1007,14 +1008,60 @@ def parser(symbol_table, read_order, line_num, lines):
                 tokens_current = len(tokens) -1
                 break
         print(tokens[tokens_current:])
+    return output
 
+def semantic(ast):
+    #print([node.name for node in PreOrderIter(ast)])
+    scope = 0
+    scope_stack  = [] 
+    in_class = False
+    for node in PreOrderIter(ast):
+        if node.name == "FunctionDecl" or node.name == "ClassDecl" or node.name == "InterfaceDecl" and not in_class:
+            if in_class == False:
+                scope = scope + 1
+            if node.name == "ClassDecl":
+                in_class = True
+        #Gets us out of the class scope
+        if node.name == "Decl":
+            in_class = False
+        #finds if something is a duplicate and if not adds to scope for variable declerations
+        if node.name == "Variable":
+            dupee = False
+            symbol = node.children[1].children[0].name
+            for entry in scope_stack:
+                if entry[0] == symbol and entry[1] == scope:
+                    print("Duplicate Declaration: " + symbol) 
+                    dupee = True   
+            if dupee != True:    
+                scope_stack.append([symbol,scope])
+        #Other declarations
+        if node.name == "FunctionDecl" or node.name == "ClassDecl" or node.name == "InterfaceDecl" or node.name == "Prototype":
+            dupee = False
+            symbol = node.children[1].children[0].name
+            for entry in scope_stack:
+                if entry[0] == symbol and entry[1] == scope:
+                    print("Duplicate Declaration: " + symbol) 
+                    dupee = True   
+            if dupee != True:    
+                scope_stack.append([symbol,scope])
+        #Finds if something isn't declared
+        if node.name == "ident":
+            found = False
+            symbol2 = node.children[0].name
+            for entry in scope_stack:
+                if entry[0] == symbol2 and (entry[1] == scope or entry[1] == 0): 
+                    found = True 
+            if found != True:
+                print("Undeclared Identifier: " + symbol2)
 if __name__ == "__main__":
     flag = 1
     symbol_table, read_order, line_num, lines = lexer()
     if flag:
-        parser(symbol_table, read_order, line_num, lines)
+        ast = parser(symbol_table, read_order, line_num, lines)
         if flag:
-            print()
+            print("Calling Semantic")
+            semantic(ast)
+            print("Done Semanitc")
         else:
             log_error("Failed On Syntax Analyzer Step")
             log_error("Will Not Advance To Semantic Analyzer Step")
