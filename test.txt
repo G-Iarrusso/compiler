@@ -6,6 +6,6 @@ int age;
 Cat new_cat () {
 this.breed = "unknown";
 this.color = "white";
-this.age = 0
+this.age = 0;
 }
 }
