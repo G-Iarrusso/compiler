@@ -957,6 +957,7 @@ def main():
             temp = Node(tokens[tokens_current][0],root)
             root.parent = parentprime
             tokens_current = tokens_current + 1
+            print("Now Looking for " + tokens[tokens_current][0] + " at " + str(tokens_current))
             return True
         else:
             return False
@@ -968,6 +969,7 @@ def main():
             print("Found" + tokens[tokens_current][0] + " at " + str(tokens_current))
             tokens_current = tokens_current + 1
             temp = Node(terminal,parentprime)
+            print("Now Looking for " + tokens[tokens_current][0] + " at " + str(tokens_current))
             return True
         else: 
             return False
@@ -980,6 +982,7 @@ def main():
             temp = Node(tokens[tokens_current][0],root)
             root.parent = parentprime
             tokens_current = tokens_current + 1
+            print("Now Looking for " + tokens[tokens_current][0] + " at " + str(tokens_current))
             return True
         else: 
             return False
@@ -1026,19 +1029,36 @@ def main():
                     ["ExprMulti",["ExprMulti","Expr"],["ExprMulti","Expr"],["ExprMulti","Expr"],["ExprMulti","Expr"],["ExprMulti","Expr"],"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon",["ExprMulti","Expr"],"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon",["ExprMulti","Expr"],["ExprMulti","Expr"],"/epsilon",["ExprMulti","Expr"],["ExprMulti","Expr"],"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon",["ExprMulti","Expr"],["ExprMulti",","],"/epsilon","/epsilon","/epsilon",["ExprMulti","Expr"],"/epsilon","/epsilon",["ExprMulti","Expr"],"/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon","/epsilon""/epsilon","/epsilon","/epsilon"],
                     ["Actuals","ExprMulti","ExprMulti","ExprMulti","ExprMulti","ExprMulti",None,None,None,None,None,None,None,None,"ExprMulti",None,None,None,None,None,None,None,None,"ExprMulti","ExprMulti",None,"ExprMulti","ExprMulti",None,None,None,None,None,"ExprMulti",None,None,None,None,"ExprMulti",None,None,"ExprMulti",None,None,None,None,None,None,None,None,None,None,None,None,None],
                     ["Constant",None, "intConstant","doubleConstant","boolConstant","stringConstant","null",None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None]]     
-    output = program()
-    for pre, fill, node in RenderTree(output,style = AsciiStyle()):
-        print("%s%s" % (pre, node.name))
-    if not output:
+
+    while (tokens[tokens_current][0] != "$" and len(tokens)>tokens_current):
+        previous = tokens[tokens_current]
+        output = program()
+        if output:
+            for pre, fill, node in RenderTree(output,style = AsciiStyle()):
+                print("%s%s" % (pre, node.name))
+            break
+        if tokens[tokens_current] == previous:
+            tokens_current = tokens_current +1
         error_line = "Line in Question: "
-        line = tokens[tokens_current-1][2]
-        log_error("SYNTAX ERROR ON LINE " + str(tokens[tokens_current-1][2]))
-        if lines[line][-2:] == "\n":
-            error_line = error_line + lines[line-1][0:-2]
+        if tokens_current > 0:
+            line = tokens[tokens_current-1][2]
+        else:
+            line = tokens[0][2]
+        log_error("SYNTAX ERROR ON LINE " + str(line))
+        if line < len(lines):
+            if lines[line][-2:] == "\n":
+                error_line = error_line + lines[line-1][0:-2]
+            else:
+                error_line = error_line + lines[line-1]
         else:
             error_line = error_line + lines[line-1]
         log_error(error_line)
-    print(output) 
+        for item in tokens[tokens_current:]:
+            if item[2] ==line:
+                tokens_current = tokens_current +1
+            else:
+                break
+        print(tokens[tokens_current:])
 
 if __name__ == "__main__":
     main()
