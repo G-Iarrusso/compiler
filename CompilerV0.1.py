@@ -332,7 +332,7 @@ def main():
                 root.parent = parentprime
                 return 1
         #If this messes with things make it an if
-        elif tokens[tokens_current][0] == "int" or tokens[tokens_current][0] == "string" or tokens[tokens_current][0] == "double" or tokens[tokens_current][0] == "bool" or tokens[tokens_current][0] == "void" or tokens[tokens_current][0] in symbol_table.keys():    
+        if tokens[tokens_current][0] == "int" or tokens[tokens_current][0] == "string" or tokens[tokens_current][0] == "double" or tokens[tokens_current][0] == "bool" or tokens[tokens_current][0] == "void" or tokens[tokens_current][0] in symbol_table.keys():    
             if FunctionDecl(root):
                 root.parent = parentprime
                 return 1
@@ -391,6 +391,7 @@ def main():
                     return False 
         return True 
     def VariableDeclAux(parentprime,is_ident = False):
+        global tokens_current
         root = Node("VariableDecl")
         if not Var(root):
             if is_ident:
