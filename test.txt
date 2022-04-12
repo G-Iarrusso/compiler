@@ -9,3 +9,10 @@ this.color = "white";
 this.age = 0;
 }
 }
+
+void main (){
+    int x;
+    int y;
+    int x;
+    x = yums + 1;
+}
