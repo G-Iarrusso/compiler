@@ -203,614 +203,771 @@ def parser(symbol_table, read_order, line_num, lines):
     read_order.append(["$","eof",line_num])
     global tokens
     global tokens_current
-
+    from anytree import Node, RenderTree, AsciiStyle
     tokens = read_order
     tokens_current = 0
     # one line of inputs is not then falses with an else of true
     # multiple is any of them are true then true otherwise false
     def program():
         global tokens_current
-        if not decl():
+        root = Node("Program")
+        if not decl(root):
             return False
-        while decl():
+        while decl(root):
             print("Start of Program")
         if tokens[tokens_current][0] == "$":
-            return True
+            return root
         else:
             return False
-    #Add other Declarations
-    def decl():
-        print("Current Token: " + tokens[tokens_current][0])
-        if VariableDecl():
+    def decl(parentprime):
+        root = Node("Decl")
+        if VariableDecl(root):
+            root.parent = parentprime
             return True
-        if FunctionDecl():
+        if FunctionDecl(root):
+            root.parent = parentprime
             return True
         if tokens[tokens_current][0] == "class":
-            if ClassDecl():
+            if ClassDecl(root):
+                root.parent = parentprime
                 return True
         if tokens[tokens_current][0] == "interface":
-            if InterfaceDecl():
+            if InterfaceDecl(root):
+                root.parent = parentprime
                 return True
         return False
-    def InterfaceDecl():
-        if not Terminals("interface"):
+    def InterfaceDecl(parentprime):
+        root = Node("InterfaceDecl")
+        if not Terminals("interface",root):
             return False
-        if not ident():
+        if not ident(root):
             return False
-        if not Terminals("{"):
+        if not Terminals("{",root):
             return False
         while True:
-            troupleProto = Prototype()
+            troupleProto = Prototype(root)
             if troupleProto == 0:
                 break
             elif troupleProto == -1:
                 return False
-        if not Terminals("}"):
+        if not Terminals("}",root):
             return False
         else:
+            root.parent = parentprime
             return True
-    def Prototype():
+    def Prototype(parentprime):
+        root = Node("Prototype")
         if tokens[tokens_current][0]!="}":
-            if not Terminals("void") and not Type():
+            if not Terminals("void",root) and not Type(root):
                 return -1
-            if not ident():
+            if not ident(root):
                 return -1
-            if not Terminals("("):
+            if not Terminals("(",root):
                 return -1
-            if not Formals():
+            if not Formals(root):
                 return -1
-            if not Terminals(")"):
+            if not Terminals(")",root):
                 return -1
-            if not Terminals(";"):
+            if not Terminals(";",root):
                 return -1
             else:
+                root.parent = parentprime
                 return 1
         else:
             return 0
-    def ClassDecl():
-        if not Terminals("class"):
+    def ClassDecl(parentprime):
+        root = Node("ClassDecl")
+        if not Terminals("class",root):
             return False
-        if not ident():
+        if not ident(root):
             return False
         if tokens[tokens_current][0] == "extends":
-            if not Terminals("extends"):
+            if not Terminals("extends",root):
                 return False
-            if not ident():
+            if not ident(root):
                 return False
         if tokens[tokens_current][0] == "implements":
-            if not Terminals("implements"):
+            if not Terminals("implements",root):
                 return False
-            if not ident():
+            if not ident(root):
                 return False
             while tokens[tokens_current][0] == ",":
-                if not Terminals(","):
+                if not Terminals(",",root):
                     return False
-                if not ident():
+                if not ident(root):
                     return False
-        if not Terminals("{"):
+        if not Terminals("{",root):
             return False
         while True:
-            troupleField = Field()
+            troupleField = Field(root)
             if troupleField == 0:
                 break
             elif troupleField == -1:
                 return False
-        if not Terminals("}"):
+        if not Terminals("}",root):
             return False
         else:
+            root.parent = parentprime
             return True
-    def Field():
+    def Field(parentprime):
+        root = Node("Field")
         if tokens[tokens_current][0] == "int" or tokens[tokens_current][0] == "string" or tokens[tokens_current][0] == "double" or tokens[tokens_current][0] == "bool" or tokens[tokens_current][0] in symbol_table.keys():
-            state = VariableDeclAux2()
+            state = VariableDeclAux2(root)
             if state == -1:
                 return -1
             if state == 1:
+                root.parent = parentprime
                 return 1
-            
+        #If this messes with things make it an if
         if tokens[tokens_current][0] == "int" or tokens[tokens_current][0] == "string" or tokens[tokens_current][0] == "double" or tokens[tokens_current][0] == "bool" or tokens[tokens_current][0] == "void" or tokens[tokens_current][0] in symbol_table.keys():    
-            if FunctionDecl():
+            if FunctionDecl(root):
+                root.parent = parentprime
                 return 1
             else:
                 return -1
         else:
             return 0
-    def VariableDeclAux2(is_ident = False):
+    def VariableDeclAux2(parentprime,is_ident = False):
         global tokens_current
-        if not Var():
+        root = Node("VariableDecl")
+        if not Var(root):
             return -1
-        if not Terminals(";"):
+        if not Terminals(";",root):
             tokens_current = tokens_current - 2
             return 0
+        root.parent = parentprime
         return 1
-    def VariableDecl():
-        if not Var():
+    def VariableDecl(parentprime):
+        root = Node("VariableDecl")
+        if not Var(root):
             return False
-        if not Terminals(";"):
+        if not Terminals(";",root):
             return False
+        root.parent = parentprime
         return True
-    def FunctionDecl():
-        if not Type() and not Terminals("void"):
+    def FunctionDecl(parentprime):
+        root = Node("FunctionDecl")
+        if not Terminals("void",root) and not Type(root):
             return False
-        if not ident():
+        
+        if not ident(root):
             return False
-        if not Terminals("("):
+
+        if not Terminals("(",root):
             return False
-        if not Formals():
+
+        if not Formals(root):
             return False
-        if not Terminals(")"):
+
+        if not Terminals(")",root):
             return False
-        if not StmtBlock():
+
+        if not StmtBlock(root):
             return False
+
         else:
+            root.parent = parentprime
             return True
-    def Formals():
-        if Var():
+    def Formals(parentprime):
+        root = Node("Formals")
+        if Var(root):
+            root.parent = parentprime
             while tokens[tokens_current][0] == ",":
-                Terminals(",")
-                if not Var():
+                Terminals(",",root)
+                if not Var(root):
                     return False 
         return True 
-    def VariableDeclAux(is_ident = False):
+    def VariableDeclAux(parentprime,is_ident = False):
         global tokens_current
-        if not Var():
+        root = Node("VariableDecl")
+        if not Var(root):
             if is_ident:
                 tokens_current = tokens_current - 1
             return 0
-        if not Terminals(";"):
+        if not Terminals(";",root):
             return -1
+        root.parent = parentprime
         return 1
 
-    def StmtBlock():
-        if not Terminals("{"):
+    def StmtBlock(parentprime):
+        root = Node("StmtBlock")
+        if not Terminals("{",root):
             return False
         while True:
             if tokens[tokens_current][0] in symbol_table.keys():
-                troupleVar = VariableDeclAux(is_ident = True)
+                troupleVar = VariableDeclAux(root,is_ident = True)
             else:
-                troupleVar = VariableDeclAux()
+                troupleVar = VariableDeclAux(root)
             if troupleVar == -1:
                 return False
             elif troupleVar == 0:
                 break
         while True:
-            trouple = Stmt()
+            trouple = Stmt(root)
             if trouple == 0:
                 break
             elif trouple == -1:
                 return False
-        if not Terminals("}"):
+        if not Terminals("}",root):
             return False
         else: 
+            root.parent = parentprime
             return True 
-    def Stmt():
+    def Stmt(parentprime):
+        root = Node("Stmt")
         print("Found a statement")
         if tokens[tokens_current][0] in symbol_table.keys() or "Constant" in tokens[tokens_current][1] or tokens[tokens_current][0] == "this" or tokens[tokens_current][0] == "new" or tokens[tokens_current][0] == "NewArray" or tokens[tokens_current][0] == "ReadInteger" or tokens[tokens_current][0] == "ReadLine" or tokens[tokens_current][0] == "!" or tokens[tokens_current][0] == "(" or tokens[tokens_current][0] == "-":
-            if not Expr():
-                print("Oops no expression")
+            if not Expr(root):
                 return -1
-            if not Terminals(";"):
+            if not Terminals(";",root):
                 return -1
             else:
+                root.parent = parentprime
                 return True
         elif tokens[tokens_current][0] == "{":
-            if StmtBlock():
+            if StmtBlock(root):
+                root.parent = parentprime
                 return True
             else:
                 return -1
         elif tokens[tokens_current][0] == "while":
-            if WhileStmt():
+            if WhileStmt(root):
+                root.parent = parentprime
                 return True
             else:
                 return -1
         elif tokens[tokens_current][0] == "for":
-            if ForStmt():
+            if ForStmt(root):
+                root.parent = parentprime
                 return True
             else:
                 return -1
         elif tokens[tokens_current][0] == "return":
-            if ReturnStmt():
+            if ReturnStmt(root):
+                root.parent = parentprime
                 return True
             else:
                 return -1
         elif tokens[tokens_current][0] == "if":
-            if IfStmt():
+            if IfStmt(root):
+                root.parent = parentprime
                 return True
             else:
                 return -1
         elif tokens[tokens_current][0] == "Print":
-            if PrintStmt():
+            if PrintStmt(root):
+                root.parent = parentprime
                 return True
             else:
                 -1
         elif tokens[tokens_current][0] == "break":
-            if BreakStmt:
+            if BreakStmt(root):
+                root.parent = parentprime
                 return True
             else:
                 return -1
         else:
             return 0  
-    def WhileStmt():
-        if not Terminals("while"):
+    def WhileStmt(parentprime):
+        root = Node("WhileStmt")
+        if not Terminals("while",root):
             return False
-        if not Terminals("("):
+        if not Terminals("(",root):
             return False
-        if not Expr():
+        if not Expr(root):
             return False
-        if not Terminals(")"):
+        if not Terminals(")",root):
             return False
-        if not Stmt():
+        if not Stmt(root):
             return False
         else:
+            root.parent = parentprime
             return True
     #Needs to be re-tooled
-    def ForStmt():
-        if not Terminals("for"):
+    def ForStmt(parentprime):
+        root = Node("ForStmt")
+        if not Terminals("for",root):
             return False
-        if not Terminals("("):
+        if not Terminals("(",root):
             return False
-        if Expr():
-            if not Terminals(";"):
+        Expr(root)
+        if Terminals(";",root):
+            if not Expr(root):
                 return False
-        if not Expr():
+            if Terminals(";",root):
+                if not Expr(root):
+                    return False
+        if not Terminals(")",root):
             return False
-        if not Terminals(";"):
-            return False
-        Expr()
-        if not Terminals(")"):
-            return False
-        if not Stmt():
+        if not Stmt(root):
             return False
         else:
+            root.parent = parentprime
             return True
-    def ReturnStmt():
-        if not Terminals("return"):
+    def ReturnStmt(parentprime):
+        root = Node("ReturnStmt")
+        if not Terminals("return",root):
             return False
-        Expr()
-        if not Terminals(";"):
+        Expr(root)
+        if not Terminals(";",root):
             return False
         else:
+            root.parent = parentprime
             return True
-    def IfStmt():
-        if not Terminals("if"):
+    def IfStmt(parentprime):
+        root = Node("IfStmt")
+        if not Terminals("if",root):
             return False
-        if not Terminals("("):
+        if not Terminals("(",root):
             return False
-        if not Expr():
+        if not Expr(root):
             return False
-        if not Terminals(")"):
+        if not Terminals(")",root):
             return False
-        if not Stmt():
+        if not Stmt(root):
             return False
-        if Terminals("else"):
-            if not Stmt():
+        if Terminals("else",root):
+            if not Stmt(root):
                 return False
         else:
+            root.parent = parentprime
             return True
-    def PrintStmt():
-        if not Terminals("Print"):
+    def PrintStmt(parentprime):
+        root = Node("PrimtStmt")
+        if not Terminals("Print",root):
             return False
-        if not Terminals("("):
+        if not Terminals("(",root):
             return False
-        if not Expr():
+        if not Expr(root):
             return False
         while tokens[tokens_current][0] == ",":
-            Terminals(",")
-            if not Expr():
+            Terminals(",",root)
+            if not Expr(root):
                 return False
-        if not Terminals(")"):
+        if not Terminals(")",root):
             return False
-        if not Terminals(";"):
+        if not Terminals(";",root):
             return False
         else:
+            root.parent = parentprime
             return True
-    def BreakStmt():
-        if not Terminals("break"):
+    def BreakStmt(parentprime):
+        root = Node("BreakStmt")
+        if not Terminals("break",root):
             return False
-        if not Terminals(";"):
+        if not Terminals(";",root):
             return False
         else:
+            root.parent = parentprime
             return True  
     
-    def Expr():
-        print("Here from statement")
+    def Expr(parentprime):
+        root = Node("Expr")
         if tokens[tokens_current][0] in symbol_table.keys() and ("Constant" not in tokens[tokens_current][1]):
-            if not ident():
+            if not ident(root):
                 return False
             if tokens[tokens_current][0] == "=":
-                print("Have an equals")
-                if not Terminals("="):
+                if not Terminals("=",root):
                     return False
-                print("Found Equals")
-                if not Expr():
+                if not Expr(root):
                     return False
-                print("Found our expression")
-                if not ExprPrime():
+                if not ExprPrime(root):
                     return False
                 else:
+                    root.parent = parentprime
                     return True
             elif tokens[tokens_current][0] == "(":
-                if not Terminals("("):
+                if not Terminals("(",root):
                     return False
-                if not Actuals():
+                if not Actuals(root):
                     return False
-                if not Terminals(")"):
+                if not Terminals(")",root):
                     return False
-                if not ExprPrime():
+                if not ExprPrime(root):
                     return False
                 else:
+                    root.parent = parentprime
                     return True
             else:
-                if not ExprPrime():
+                if not ExprPrime(root):
                     return False
                 else:
+                    root.parent = parentprime
                     return True
         elif tokens[tokens_current][0] == "this":
-            if not Terminals("this"):
+            if not Terminals("this",root):
                 return False
-            if not ExprPrime():
+            if not ExprPrime(root):
                 return False
             else:
+                root.parent = parentprime
                 return True
         elif tokens[tokens_current][0] == "new":
-            if not Terminals("new"):
+            if not Terminals("new",root):
                 return False
-            if not ident():
+            if not ident(root):
                 return False
-            if not ExprPrime:
+            if not ExprPrime(root):
                 return False
             else:
+                root.parent = parentprime
                 return True
         elif tokens[tokens_current][0] == "NewArray":
-            if not Terminals("NewArray"):
+            if not Terminals("NewArray",root):
                 return False
-            if not Terminals("("):
+            if not Terminals("(",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            if not Terminals(","):
+            if not Terminals(",",root):
                 return False
-            if not Type():
+            if not Type(root):
                 return False
-            if not Terminals(")"):
+            if not Terminals(")",root):
                 return False
-            if not ExprPrime:
+            if not ExprPrime(root):
                 return False
             else:
+                root.parent = parentprime
                 return True
         elif tokens[tokens_current][0] == "ReadInteger":
-            if not Terminals("ReadInteger"):
+            if not Terminals("ReadInteger",root):
                 return False
-            if not Terminals("("):
+            if not Terminals("(",root):
                 return False
-            if not Terminals(")"):
+            if not Terminals(")",root):
                 return False
-            if not ExprPrime:
+            if not ExprPrime(root):
                 return False
             else:
+                root.parent = parentprime
                 return True
         elif tokens[tokens_current][0] == "ReadLine":
-            if not Terminals("ReadLine"):
+            if not Terminals("ReadLine",root):
                 return False
-            if not Terminals("("):
+            if not Terminals("(",root):
                 return False
-            if not Terminals(")"):
+            if not Terminals(")",root):
                 return False
-            if not ExprPrime:
+            if not ExprPrime(root):
                 return False
             else:
+                root.parent = parentprime
                 return True
         elif tokens[tokens_current][0] == "!":
-            if not Terminals("!"):
+            if not Terminals("!",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            if not ExprPrime:
+            if not ExprPrime(root):
                 return False
             else:
+                root.parent = parentprime
                 return True
         elif tokens[tokens_current][0] == "(":
-            if not Terminals("("):
+            if not Terminals("(",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            if not Terminals(")"):
+            if not Terminals(")",root):
                 return False
-            if not ExprPrime:
+            if not ExprPrime(root):
                 return False
             else:
+                root.parent = parentprime
                 return True
         elif tokens[tokens_current][0] == "-":
-            if not Terminals("-"):
+            if not Terminals("-",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            if not ExprPrime:
+            if not ExprPrime(root):
                 return False
             else:
+                root.parent = parentprime
                 return True
         elif tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][1] == "doubleConstant" or tokens[tokens_current][1] == "boolConstant" or tokens[tokens_current][1] == "stringConstant" or tokens[tokens_current][1] == "null":
             print("Found a Cosntant")
-            if not Constant():
+            if not Constant(root):
                 return False
             else: 
+                root.parent = parentprime
                 return True
         return False
-    def Actuals():
-        if Expr():
+    def Actuals(parentprime):
+        root = Node("Actuals")
+        if Expr(root):
+            root.parent = parentprime
             while tokens[tokens_current] == ",":
-                Terminals(",")
-                if not Expr():
+                Terminals(",",root)
+                if not Expr(root):
                     return False
         return True 
-    def ExprPrime():
+    def ExprPrime(parentprime):
+        root = Node("ExprPrime")
         if tokens[tokens_current][0] == "&&":
-            if not Terminals("&&"):
+            if not Terminals("&&",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            return ExprPrime()
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         elif tokens[tokens_current][0] == "||":
-            if not Terminals("||"):
+            if not Terminals("||",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            return ExprPrime()
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         elif tokens[tokens_current][0] == ".":
-            if not Terminals("."):
+            if not Terminals(".",root):
                 return False
-            if not ident():
+            if not ident(root):
                 return False
             if tokens[tokens_current][0] == "=":
-                if not Terminals("="):
+                if not Terminals("=",root):
                     return False
-                if not Expr():
+                if not Expr(root):
                     return False
             elif tokens[tokens_current][0] == "(":
-                if not Terminals("("):
+                if not Terminals("(",root):
                     return False
-                if not Actuals():
+                if not Actuals(root):
                     return False
-                if not Terminals(")"):
+                if not Terminals(")",root):
                     return False
-            return ExprPrime()
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         elif tokens[tokens_current][0] == "[":
-            if not Terminals("["):
+            if not Terminals("[",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            if not Terminals("]"):
+            if not Terminals("]",root):
                 return False
             if tokens[tokens_current][0] == "=":
-                if not Terminals("="):
+                if not Terminals("=",root):
                     return False
-                if not Expr():
+                if not Expr(root):
                     return False
-            return ExprPrime()
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         elif tokens[tokens_current][0] == "+":
-            if not Terminals("+"):
+            if not Terminals("+",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False  
-            return ExprPrime() 
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         elif tokens[tokens_current][0] == "-":
-            if not Terminals("-"):
+            if not Terminals("-",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            return ExprPrime()  
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True  
         elif tokens[tokens_current][0] == "*":
-            if not Terminals("*"):
+            if not Terminals("*",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False 
-            return ExprPrime()
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         elif tokens[tokens_current][0] == "/":
-            if not Terminals("/"):
+            if not Terminals("/",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            return ExprPrime()
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         elif tokens[tokens_current][0] == "%":
-            if not Terminals("%"):
+            if not Terminals("%",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            return ExprPrime()
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         elif tokens[tokens_current][0] == "<":
-            if not Terminals("<"):
+            if not Terminals("<",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            return ExprPrime()
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         elif tokens[tokens_current][0] == "<=":
-            if not Terminals("<="):
+            if not Terminals("<=",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            return ExprPrime()
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         elif tokens[tokens_current][0] == ">":
-            if not Terminals(">"):
+            if not Terminals(">",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            return ExprPrime()
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         elif tokens[tokens_current][0] == ">=":
-            if not Terminals(">="):
+            if not Terminals(">=",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            return ExprPrime()
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         elif tokens[tokens_current][0] == "==":
-            if not Terminals("=="):
+            if not Terminals("==",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            return ExprPrime()
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         elif tokens[tokens_current][0] == "!=":
-            if not Terminals("!="):
+            if not Terminals("!=",root):
                 return False
-            if not Expr():
+            if not Expr(root):
                 return False
-            return ExprPrime()
+            if not ExprPrime(root):
+                return False
+            else:
+                root.parent = parentprime
+                return True
         else:
             return True
 
-    def Var():
-        if not Type():
+    def Var(parentprime):
+        root = Node("Variable")
+        if not Type(root):
             return False
-        if not ident():
+        if not ident(root):
             return False
+        root.parent = parentprime
         return True
    
-    def Type():
-        if Terminals("int"):
-            return TypePrime()
-        if Terminals("string"):
-            return TypePrime()
-        if Terminals("bool"):
-            return TypePrime()
-        if Terminals("double"):
-            return TypePrime()
-        if ident():
-            return TypePrime()
+    def Type(parentprime):
+        root = Node("Type")
+        if Terminals("int",root):
+            if TypePrime(root):
+                root.parent = parentprime
+                return True
+            else:
+                return False
+        if Terminals("string",root):
+            if TypePrime(root):
+                root.parent = parentprime
+                return True
+            else:
+                return False
+        if Terminals("bool",root):
+            if TypePrime(root):
+                root.parent = parentprime
+                return True
+            else:
+                return False
+        if Terminals("double",root):
+            if TypePrime(root):
+                root.parent = parentprime
+                return True
+            else:
+                return False
+        if ident(root):
+            if TypePrime(root):
+                root.parent = parentprime
+                return True
+            else:
+                return False
         else:
             return False
-    def TypePrime():
+    def TypePrime(parentprime):
+        root = Node("TypePrime")
         if tokens[tokens_current][0] == "[":
-            if not Terminals("["):
+            if not Terminals("[",root):
                 return False
-            if not Terminals("]"):
+            if not Terminals("]",root):
                 return False
-            return TypePrime()
+            if TypePrime(root):
+                root.parent = parentprime
+                return True
+            else:
+                return False
         else:
             return True
 
-    def Constant():
+    def Constant(parentprime):
         global tokens_current
+        root = Node("Constant")
         print("Looking For " + "Constant" + " at " + str(tokens_current))
         if tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][1] == "doubleConstant" or tokens[tokens_current][1] == "boolConstant" or tokens[tokens_current][1] == "stringConstant" or tokens[tokens_current][1] == "null":
             print("Found" + tokens[tokens_current][0] + " at " + str(tokens_current))
+            temp = Node(tokens[tokens_current][0],root)
+            root.parent = parentprime
             tokens_current = tokens_current + 1
             print("Now Looking for " + tokens[tokens_current][0] + " at " + str(tokens_current))
             return True
         else:
             return False
     
-    def Terminals(terminal):
+    def Terminals(terminal,parentprime):
         global tokens_current
         print("Looking For " + terminal + " at " + str(tokens_current))
         if tokens[tokens_current][0] == terminal:
             print("Found" + tokens[tokens_current][0] + " at " + str(tokens_current))
             tokens_current = tokens_current + 1
+            temp = Node(terminal,parentprime)
             print("Now Looking for " + tokens[tokens_current][0] + " at " + str(tokens_current))
             return True
         else: 
             return False
-    def ident():
+    def ident(parentprime):
         global tokens_current
+        root = Node("ident", None)
         print("Looking For " + tokens[tokens_current][0] + " at " + str(tokens_current))
         if tokens[tokens_current][0] in symbol_table.keys():
             print("Found" + tokens[tokens_current][0] + " at " + str(tokens_current))
+            temp = Node(tokens[tokens_current][0],root)
+            root.parent = parentprime
             tokens_current = tokens_current + 1
             print("Now Looking for " + tokens[tokens_current][0] + " at " + str(tokens_current))
             return True
@@ -821,6 +978,8 @@ def parser(symbol_table, read_order, line_num, lines):
         previous = tokens[tokens_current]
         output = program()
         if output:
+            for pre, fill, node in RenderTree(output,style = AsciiStyle()):
+                print("%s%s" % (pre, node.name))
             break
         if tokens[tokens_current] == previous:
             tokens_current = tokens_current +1
