@@ -8,7 +8,7 @@ from cmath import log
 from queue import Empty
 import re
 from tkinter import Variable
-from anytree import Node, RenderTree, AsciiStyle, PreOrderIter
+from anytree import Node, RenderTree, AsciiStyle, PreOrderIter, findall
 
 output = open("error_log.txt", "w")
 output.write("Decaf Error Stack Trace\n")
@@ -698,11 +698,12 @@ def parser(symbol_table, read_order, line_num, lines):
     def Actuals(parentprime):
         root = Node("Actuals")
         if Expr(root):
-            root.parent = parentprime
-            while tokens[tokens_current] == ",":
-                Terminals(",",root)
+            while tokens[tokens_current][0] == ",":
+                if not Terminals(",",root):
+                    return False
                 if not Expr(root):
                     return False
+            root.parent = parentprime
         return True 
     def ExprPrime(parentprime):
         root = Node("ExprPrime")
@@ -884,6 +885,7 @@ def parser(symbol_table, read_order, line_num, lines):
             return False
         if not ident(root):
             return False
+        root.children[1].children[0].typing = root.children[0].children[0].name
         root.parent = parentprime
         return True
    
@@ -961,6 +963,7 @@ def parser(symbol_table, read_order, line_num, lines):
             print("Now Looking for " + tokens[tokens_current][0] + " at " + str(tokens_current))
             return True
         else: 
+            print("Did not find " + terminal + " Found:" + tokens[tokens_current][0])
             return False
     def ident(parentprime):
         global tokens_current
@@ -968,7 +971,7 @@ def parser(symbol_table, read_order, line_num, lines):
         print("Looking For " + tokens[tokens_current][0] + " at " + str(tokens_current))
         if tokens[tokens_current][0] in symbol_table.keys():
             print("Found" + tokens[tokens_current][0] + " at " + str(tokens_current))
-            temp = Node(tokens[tokens_current][0],root,line_num=tokens[tokens_current][2])
+            temp = Node(tokens[tokens_current][0],root, line_num=tokens[tokens_current][2], typing = None)
             root.parent = parentprime
             tokens_current = tokens_current + 1
             print("Now Looking for " + tokens[tokens_current][0] + " at " + str(tokens_current))
@@ -979,6 +982,7 @@ def parser(symbol_table, read_order, line_num, lines):
     while (tokens[tokens_current][0] != "$" and len(tokens)>tokens_current):
         previous = tokens[tokens_current]
         output = program()
+        print(read_order)
         if output:
             for pre, fill, node in RenderTree(output,style = AsciiStyle()):
                 print("%s%s" % (pre, node.name))
@@ -1012,67 +1016,90 @@ def parser(symbol_table, read_order, line_num, lines):
     return output
 
 def semantic(ast,symbol_table):
-    print([node.name for node in PreOrderIter(ast)])
     scope = 0
     scope_stack = [] 
     symbol_table = []
     in_class = False
+    in_function = False
+    in_interface = False
     for node in PreOrderIter(ast):
-        if node.name == "FunctionDecl" or node.name == "ClassDecl" or node.name == "InterfaceDecl" and not in_class:
-            if in_class == False:
-                scope = scope + 1
-            if node.name == "ClassDecl":
-                in_class = True
-        if node.name == "}" and not in_class:
-            scope = scope - 1
+        #Find a new function(Still need interface and Prototypes)
+        if node.name == "FunctionDecl" and scope == 0:
+            if in_function == True:
+                return False
+            in_function = True
+            scope = node.children[1].children[0].name
+            if node.children[0] == "Type":
+                type = node.children[0].children[0].name
+            else:
+                type = "void"
+            args = 0
+            if node.children[3].name == "Formals":
+                arg = findall(node.children[3], filter_=lambda node: node.name in ("Variable"))
+                args = len(arg)
+                type_arg = []
+                for item in arg:
+                    type_arg.append(item.children[0].children[0].name)
+                print(type_arg)
+                symbol_table.append([node.children[1].children[0].name,0,type,"Function",args,type_arg])
+            else:
+                args = 0
+                symbol_table.append([node.children[1].children[0].name,0,type,"Function",args])
+            scope_stack.append([scope,0])
+        #Find a new class
+        elif node.name == "ClassDecl" and scope == 0:
+            in_class = True
+            scope = node.children[1].children[0].name
+            symbol_table.append([node.children[1].children[0].name,0,"Class"])
+            scope_stack.append([scope,0])
+        
+        elif node.name == "InterfaceDecl" and scope == 0:
+            print("Found interface")
+            in_interface = True
+            scope = node.children[1].children[0].name
+            symbol_table.append([node.children[1].children[0].name,0,"Interface"])
+            scope_stack.append([scope,0])
+
         #Gets us out of the class scope
         if node.name == "Decl":
-            if in_class:
-                scope = scope - 1
-                scope_stack = []
+            print("New Declaration")
+            scope_stack = [s for s in scope_stack if s[1] == 0]
+            scope = 0
             in_class = False
-        #finds if something is a duplicate and if not adds to scope for variable declerations
+            in_function = False
+            in_interface = False
+
+        #Rules for scope
+        #Variable Duplicates
         if node.name == "Variable":
             dupee = False
-            print(node.children[1].children[0])
             symbol = node.children[1].children[0].name
             for entry in scope_stack:
-                if entry[0] == symbol and entry[1] == scope:
+                if entry[0] == symbol and (entry[1] == scope or entry[1]==0):
                     log_error("SEMANTIC ERROR ON LINE "+str(node.children[1].children[0].line_num))
                     log_error("Duplicate Declaration: " + symbol) 
                     dupee = True   
             if dupee != True:    
                 scope_stack.append([symbol,scope])
-                symbol_table.append([symbol,scope,node.children[0].children[0].name,"variable"])
-        #Other declarations
-        if node.name == "FunctionDecl" or node.name == "ClassDecl" or node.name == "InterfaceDecl" or node.name == "Prototype":
+                symbol_table.append([symbol,scope,node.children[0].children[0].name,"Variable"])
+        #Function/Class Duplicates & adding novel functions to the scope if in class
+        if (in_class == True or scope == 0 or in_interface == True) and (node.name == "FunctionDecl" or node.name == "Prototype"):
+            print("class function")
             dupee = False
             symbol = node.children[1].children[0].name
             for entry in scope_stack:
-                if entry[0] == symbol and entry[1] == scope:
+                if entry[0] == symbol:
                     log_error("SEMANTIC ERROR ON LINE "+str(node.children[1].children[0].line_num))
                     log_error("Duplicate Declaration: " + symbol) 
-                    dupee = True   
-            if dupee != True:    
-                scope_stack.append([symbol,scope])
-                if node.name == "FunctionDecl":
-                    if node.children[0] == "Type":
-                        type = node.children[0].children[0].name
-                    else:
-                        type = "void"
-                    symbol_table.append([symbol,scope,type,"function"])
-                elif node.name == "ClassDecl":
-                    symbol_table.append([symbol,scope,"class","class"])
-                elif node.name == "interface":
-                    symbol_table.append([symbol,scope,"interface","interface"])
+                    dupee = True
+            if in_class == True or in_interface == True:
+                if node.children[0].name == "Type":
+                    type = node.children[0].children[0].name
                 else:
-                    if node.children[0] == "Type":
-                        type = node.children[0].children[0].name
-                    else:
-                        type = "void"
-                    symbol_table.append([symbol,scope,type,"prototype"])
-        
-        #Finds if something isn't declared
+                    type = "void"
+                symbol_table.append([node.children[1].children[0].name,scope,type,"Function"])
+                scope_stack.append([symbol,scope])
+        #Undeclared Identifiers
         if node.name == "ident":
             found = False
             symbol2 = node.children[0].name
@@ -1082,6 +1109,31 @@ def semantic(ast,symbol_table):
             if found != True:
                 log_error("SEMANTIC ERROR ON LINE "+str(node.children[0].line_num))
                 log_error("Undeclared Identifier: " + symbol2)
+        if node.name == "ident":
+            search = node.children[0].name
+            is_function = False
+            #if we find the function get the number of arguments
+            for item in symbol_table:
+                if item[0] == search and item[3] == "Function":
+                    is_function = True
+                    args = item[4]
+                    function = item
+            #get the number of arguments in the call
+            if is_function and node.parent.children[2].name == "Actuals":
+                arg = findall(node.parent.children[2], filter_=lambda node: node.name in ("ident"))
+                if args != len(arg):
+                    log_error("SEMANTIC ERROR ON LINE "+str(node.children[0].line_num))
+                    log_error("Incorret number of Arguments: " + search)
+                if args>0:
+                    comparators = []
+                    for item in arg:
+                        to_compare = item.children[0].name
+                        for item in symbol_table:
+                            if item[0] == to_compare and item[1] == scope:
+                                comparators.append(item[2])
+                    if comparators != function[5]:
+                        log_error("SEMANTIC ERROR ON LINE "+str(node.children[0].line_num))
+                        log_error("Incorret type of Arguments: " + search)
     has_main = False
     for item in symbol_table:
         if item[0] == "main":
@@ -1089,8 +1141,6 @@ def semantic(ast,symbol_table):
     if has_main == False:
         log_error("SEMANTIC ERROR ON LINE "+str(0))
         print("Error No Main Function")
-    
-
     print(symbol_table)
 if __name__ == "__main__":
     flag = 1
