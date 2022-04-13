@@ -222,7 +222,7 @@ def parser(symbol_table, read_order, line_num, lines):
             return False
     def decl(parentprime):
         root = Node("Decl")
-        if VariableDecl(root):
+        if VariableDeclAux2(root) == 1:
             root.parent = parentprime
             return True
         if FunctionDecl(root):
@@ -945,7 +945,7 @@ def parser(symbol_table, read_order, line_num, lines):
         if tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][1] == "doubleConstant" or tokens[tokens_current][1] == "boolConstant" or tokens[tokens_current][1] == "stringConstant" or tokens[tokens_current][1] == "null":
             print("Found" + tokens[tokens_current][0] + " at " + str(tokens_current))
             temp = Node(tokens[tokens_current][1],root)
-            temp2 = Node(tokens[tokens_current][0],temp)
+            temp2 = Node(tokens[tokens_current][0],temp, line_num=tokens[tokens_current][2])
             root.parent = parentprime
             tokens_current = tokens_current + 1
             print("Now Looking for " + tokens[tokens_current][0] + " at " + str(tokens_current))
@@ -959,7 +959,7 @@ def parser(symbol_table, read_order, line_num, lines):
         if tokens[tokens_current][0] == terminal:
             print("Found" + tokens[tokens_current][0] + " at " + str(tokens_current))
             tokens_current = tokens_current + 1
-            temp = Node(terminal,parentprime)
+            temp = Node(terminal,parentprime, line_num=tokens[tokens_current][2])
             print("Now Looking for " + tokens[tokens_current][0] + " at " + str(tokens_current))
             return True
         else: 
@@ -1080,8 +1080,11 @@ def semantic(ast,symbol_table):
                     log_error("Duplicate Declaration: " + symbol) 
                     dupee = True   
             if dupee != True:    
+                if len(node.children[0].children)>1:
+                    symbol_table.append([symbol,scope,node.children[0].children[0].name + "[]","Variable"])
+                else:
+                    symbol_table.append([symbol,scope,node.children[0].children[0].name,"Variable"])
                 scope_stack.append([symbol,scope])
-                symbol_table.append([symbol,scope,node.children[0].children[0].name,"Variable"])
         #Function/Class Duplicates & adding novel functions to the scope if in class
         if (in_class == True or scope == 0 or in_interface == True) and (node.name == "FunctionDecl" or node.name == "Prototype"):
             print("class function")
@@ -1099,6 +1102,27 @@ def semantic(ast,symbol_table):
                     type = "void"
                 symbol_table.append([node.children[1].children[0].name,scope,type,"Function"])
                 scope_stack.append([symbol,scope])
+        #NewArray Checking
+        if node.name == "NewArray":
+            possible_array = node.parent.parent.children[0].children[0].name
+            found = False
+            for entry in symbol_table:
+                if entry[0] == possible_array and ("[]" in entry[2]):
+                    print("Found an array")
+                    arr = entry
+                    found = True 
+            if found:
+                arr_type = node.parent.children[4].children[0].name
+                if not(arr_type in arr[2]):
+                    log_error("SEMANTIC ERROR ON LINE "+str(node.line_num))
+                    log_error("Incorrect Array Type: " + "NewArray") 
+                amount = node.parent.children[2].children[0].children[0]
+                if amount.name != "intConstant":
+                    log_error("SEMANTIC ERROR ON LINE "+str(node.line_num))
+                    log_error("Incorrect length: " + "NewArray") 
+                if int(amount.children[0].name) <=0:
+                    log_error("SEMANTIC ERROR ON LINE "+str(node.line_num))
+                    log_error("Arrays cannot be 0: " + "NewArray") 
         #Undeclared Identifiers
         if node.name == "ident":
             found = False
@@ -1109,6 +1133,7 @@ def semantic(ast,symbol_table):
             if found != True:
                 log_error("SEMANTIC ERROR ON LINE "+str(node.children[0].line_num))
                 log_error("Undeclared Identifier: " + symbol2)
+        #Funciton Checking
         if node.name == "ident":
             search = node.children[0].name
             is_function = False
