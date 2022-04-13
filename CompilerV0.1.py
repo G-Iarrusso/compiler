@@ -204,7 +204,6 @@ def parser(symbol_table, read_order, line_num, lines):
     read_order.append(["$","eof",line_num])
     global tokens
     global tokens_current
-    from anytree import Node, RenderTree, AsciiStyle
     tokens = read_order
     tokens_current = 0
     # one line of inputs is not then falses with an else of true
@@ -1016,6 +1015,106 @@ def parser(symbol_table, read_order, line_num, lines):
     return output
 
 def semantic(ast,symbol_table):
+    known_idents = []
+    alg_operators = parse("algebraic_ops.txt")
+    log_operators = parse("logical_ops.txt")
+    class ident:
+        def __init__(self,name,type,context):
+            self.name = name
+            self.type = type
+            self.context = context
+    def handle_expr(expr_tree):
+        if expr_tree.children[0].name == "ident" and expr_tree.children[1].name == "=":
+            type,return_type = handle_expr_aux(expr_tree.children[2])
+            for idents in known_idents:
+                if expr_tree.children[0].children[0].name == idents.name:
+                    if type == idents.type:
+                        print("Good Type")
+                        if return_type == "Alg" and idents.type != "bool":
+                            print("Good Return type")
+                        elif return_type == "Bool" and idents.type == "bool":
+                            print("Good return type")
+                        else:
+                            print("Bad Return Type")
+                    else:
+                        print("Bad Type")
+
+        else:
+            type,return_type = handle_expr_aux(expr_tree)
+            if type != -1:
+                print("Good Type")
+            if return_type != -1:
+                print("Good Retrun type")
+
+         
+
+    def handle_expr_aux(expr_tree):
+        type = None
+        return_type = None
+        for pre, fill, node in RenderTree(expr_tree,style = AsciiStyle()):
+            print("%s%s" % (pre, node.name))
+        for node in PreOrderIter(expr_tree.children):
+            node = node[0]
+            if node.children != None:
+                type, return_type = handle_expr_aux(node)
+            else:
+                print("Went Else")
+                if node.name in symbol_table.keys():
+                    for idents in known_idents:
+                        if node.name == idents.name:
+                            if type == None:
+                                type = idents.type
+                            elif type == -1 or type == idents.type:
+                                continue
+                            else:
+                                type = -1
+                elif "Constant" in node.parent.name:
+                    constant_type = node.parent.name[:-8]
+                    if type == None:
+                        type = constant_type
+                    elif type == -1 or type == constant_type:
+                        continue
+                    else:
+                        type = -1
+                elif node.name in log_operators():
+                    if return_type == None or return_type == "Alg":
+                        return_type = "Bool"
+                    elif return_type == -1 or return_type == "Bool":
+                        continue
+                    else:
+                        return_type = -1
+                elif node.name in alg_operators():
+                    if return_type == None:
+                        return_type = "Alg"
+                    elif return_type == -1 or return_type == "Bool":
+                        continue
+                    else:
+                        return_type = -1
+
+    def type_checking():
+        for node in PreOrderIter(ast):
+            if node.name == "Variable":
+                new_ident = ident(node.children[1].children[0].name,node.children[0].children[0].name, "Var")
+                known_idents.append(new_ident)
+
+            if node.name == "FunctionDecl":
+                if node.children[0].name == "Type":
+                    new_ident = ident(node.children[1].children[0].name, node.children[0].children[0].children[0].name, "Func")
+                else:
+                    new_ident = ident(node.children[1].children[0].name,node.children[0].name, "Func")
+                known_idents.append(new_ident)
+
+            if node.name == "ClassDecl":
+                new_ident = ident(node.children[1].children[0].name,node.children[0].name, "Class")
+                known_idents.append(new_ident)
+            
+            if node.name == "Expr":
+                out_come = handle_expr(node)
+                print(out_come)
+            
+    type_checking()
+    return
+    print([node.name for node in PreOrderIter(ast)])
     scope = 0
     scope_stack = [] 
     symbol_table = []
