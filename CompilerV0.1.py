@@ -942,7 +942,8 @@ def parser(symbol_table, read_order, line_num, lines):
         print("Looking For " + "Constant" + " at " + str(tokens_current))
         if tokens[tokens_current][1] == "intConstant" or tokens[tokens_current][1] == "doubleConstant" or tokens[tokens_current][1] == "boolConstant" or tokens[tokens_current][1] == "stringConstant" or tokens[tokens_current][1] == "null":
             print("Found" + tokens[tokens_current][0] + " at " + str(tokens_current))
-            temp = Node(tokens[tokens_current][0],root)
+            temp = Node(tokens[tokens_current][1],root)
+            temp2 = Node(tokens[tokens_current][0],temp)
             root.parent = parentprime
             tokens_current = tokens_current + 1
             print("Now Looking for " + tokens[tokens_current][0] + " at " + str(tokens_current))
@@ -1010,10 +1011,11 @@ def parser(symbol_table, read_order, line_num, lines):
         print(tokens[tokens_current:])
     return output
 
-def semantic(ast):
-    #print([node.name for node in PreOrderIter(ast)])
+def semantic(ast,symbol_table):
+    print([node.name for node in PreOrderIter(ast)])
     scope = 0
-    scope_stack  = [] 
+    scope_stack = [] 
+    symbol_table = []
     in_class = False
     for node in PreOrderIter(ast):
         if node.name == "FunctionDecl" or node.name == "ClassDecl" or node.name == "InterfaceDecl" and not in_class:
@@ -1021,8 +1023,13 @@ def semantic(ast):
                 scope = scope + 1
             if node.name == "ClassDecl":
                 in_class = True
+        if node.name == "}" and not in_class:
+            scope = scope - 1
         #Gets us out of the class scope
         if node.name == "Decl":
+            if in_class:
+                scope = scope - 1
+                scope_stack = []
             in_class = False
         #finds if something is a duplicate and if not adds to scope for variable declerations
         if node.name == "Variable":
@@ -1036,6 +1043,7 @@ def semantic(ast):
                     dupee = True   
             if dupee != True:    
                 scope_stack.append([symbol,scope])
+                symbol_table.append([symbol,scope,node.children[0].children[0].name,"variable"])
         #Other declarations
         if node.name == "FunctionDecl" or node.name == "ClassDecl" or node.name == "InterfaceDecl" or node.name == "Prototype":
             dupee = False
@@ -1047,6 +1055,23 @@ def semantic(ast):
                     dupee = True   
             if dupee != True:    
                 scope_stack.append([symbol,scope])
+                if node.name == "FunctionDecl":
+                    if node.children[0] == "Type":
+                        type = node.children[0].children[0].name
+                    else:
+                        type = "void"
+                    symbol_table.append([symbol,scope,type,"function"])
+                elif node.name == "ClassDecl":
+                    symbol_table.append([symbol,scope,"class","class"])
+                elif node.name == "interface":
+                    symbol_table.append([symbol,scope,"interface","interface"])
+                else:
+                    if node.children[0] == "Type":
+                        type = node.children[0].children[0].name
+                    else:
+                        type = "void"
+                    symbol_table.append([symbol,scope,type,"prototype"])
+        
         #Finds if something isn't declared
         if node.name == "ident":
             found = False
@@ -1057,13 +1082,23 @@ def semantic(ast):
             if found != True:
                 log_error("SEMANTIC ERROR ON LINE "+str(node.children[0].line_num))
                 log_error("Undeclared Identifier: " + symbol2)
+    has_main = False
+    for item in symbol_table:
+        if item[0] == "main":
+            has_main = True
+    if has_main == False:
+        log_error("SEMANTIC ERROR ON LINE "+str(0))
+        print("Error No Main Function")
+    
+
+    print(symbol_table)
 if __name__ == "__main__":
     flag = 1
     symbol_table, read_order, line_num, lines = lexer()
     if flag:
         ast = parser(symbol_table, read_order, line_num, lines)
         if flag:
-            semantic(ast)
+            semantic(ast, symbol_table)
             if flag:
                 #call intermediate
                 print()
