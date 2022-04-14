@@ -21,12 +21,10 @@ interface faces {
 int hello ( int x ){
     int a;
     int b;
-    x = 1;
+    x = 1 + a + b;
 
     return x;
 }
-void main (){
-    string x;
-    string[] y;
-    y = NewArray (0,string) ;
+int main (){
+    
 }
