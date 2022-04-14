@@ -17,13 +17,16 @@ interface faces {
     string bling();
 }
 */
-void hello ( int x ){
+
+int hello ( int x ){
     int a;
     int b;
     x = 1;
+
+    return x;
 }
 void main (){
     string x;
-    int y;
-    x = 1 + hello(x);
+    string[] y;
+    y = NewArray (0,string) ;
 }
