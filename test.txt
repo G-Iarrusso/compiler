@@ -1,29 +1,5 @@
-//hello
-/*
-class Cat {
-string breed;
-string color;
-int age;
-int z;
-Cat new_cat () {
-this.breed = "unknown";
-this.color = "white";
-this.age = 0;
-}
-}
-
-interface faces {
-    int add();
-    string bling();
-}
-*/
-void hello ( int x ){
-    int a;
-    int b;
-    x = 1;
-}
 void main (){
-    string x;
+    int x;
     int y;
-    x = 1 + hello(x);
+    x = 1 + "String";
 }

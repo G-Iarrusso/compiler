@@ -1024,39 +1024,26 @@ def semantic(ast,symbol_table):
             self.type = type
             self.context = context
     def handle_expr(expr_tree):
-        if expr_tree.children[0].name == "ident" and expr_tree.children[1].name == "=":
-            type,return_type = handle_expr_aux(expr_tree.children[2])
-            for idents in known_idents:
-                if expr_tree.children[0].children[0].name == idents.name:
-                    if type == idents.type:
-                        print("Good Type")
-                        if return_type == "Alg" and idents.type != "bool":
-                            print("Good Return type")
-                        elif return_type == "Bool" and idents.type == "bool":
-                            print("Good return type")
-                        else:
-                            print("Bad Return Type")
-                    else:
-                        print("Bad Type")
-
-        else:
-            type,return_type = handle_expr_aux(expr_tree)
-            if type != -1:
-                print("Good Type")
+        print("Literal")
+        type,return_type = handle_expr_aux(expr_tree)
+        if type != -1:
+            print("Good Type")
             if return_type != -1:
                 print("Good Retrun type")
-
-         
+                return True
+        return False
 
     def handle_expr_aux(expr_tree):
+        print("New itteration")
         type = None
         return_type = None
         for pre, fill, node in RenderTree(expr_tree,style = AsciiStyle()):
             print("%s%s" % (pre, node.name))
-        for node in PreOrderIter(expr_tree.children):
-            node = node[0]
-            if node.children != None:
+        for node in PreOrderIter(expr_tree):
+            if node.children != None and node != expr_tree:
+                print(node)
                 type, return_type = handle_expr_aux(node)
+                
             else:
                 print("Went Else")
                 if node.name in symbol_table.keys():
@@ -1076,20 +1063,21 @@ def semantic(ast,symbol_table):
                         continue
                     else:
                         type = -1
-                elif node.name in log_operators():
+                elif node.name in log_operators:
                     if return_type == None or return_type == "Alg":
                         return_type = "Bool"
                     elif return_type == -1 or return_type == "Bool":
                         continue
                     else:
                         return_type = -1
-                elif node.name in alg_operators():
+                elif node.name in alg_operators:
                     if return_type == None:
                         return_type = "Alg"
-                    elif return_type == -1 or return_type == "Bool":
+                    elif return_type == -1 or return_type == "Bool" or return_type == "Alg":
                         continue
                     else:
                         return_type = -1
+        return type, return_type
 
     def type_checking():
         for node in PreOrderIter(ast):
@@ -1111,6 +1099,7 @@ def semantic(ast,symbol_table):
             if node.name == "Expr":
                 out_come = handle_expr(node)
                 print(out_come)
+                return
             
     type_checking()
     return
