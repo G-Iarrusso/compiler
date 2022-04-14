@@ -1029,7 +1029,7 @@ def semantic(ast,symbol_table):
                 return False
             in_function = True
             scope = node.children[1].children[0].name
-            if node.children[0] == "Type":
+            if node.children[0].name == "Type":
                 type = node.children[0].children[0].name
             else:
                 type = "void"
@@ -1113,6 +1113,7 @@ def semantic(ast,symbol_table):
                     found = True 
             if found:
                 arr_type = node.parent.children[4].children[0].name
+                
                 if not(arr_type in arr[2]):
                     log_error("SEMANTIC ERROR ON LINE "+str(node.line_num))
                     log_error("Incorrect Array Type: " + "NewArray") 
@@ -1145,7 +1146,7 @@ def semantic(ast,symbol_table):
                     function = item
             #get the number of arguments in the call
             if is_function and node.parent.children[2].name == "Actuals":
-                arg = findall(node.parent.children[2], filter_=lambda node: node.name in ("ident"))
+                arg = findall(node.parent.children[2], filter_=lambda node: node.name in ("ident","Constant"))
                 if args != len(arg):
                     log_error("SEMANTIC ERROR ON LINE "+str(node.children[0].line_num))
                     log_error("Incorret number of Arguments: " + search)
@@ -1153,6 +1154,8 @@ def semantic(ast,symbol_table):
                     comparators = []
                     for item in arg:
                         to_compare = item.children[0].name
+                        if "Constant" in to_compare:
+                            comparators.append(to_compare[0:-8])
                         for item in symbol_table:
                             if item[0] == to_compare and item[1] == scope:
                                 comparators.append(item[2])
@@ -1167,15 +1170,49 @@ def semantic(ast,symbol_table):
         log_error("SEMANTIC ERROR ON LINE "+str(0))
         print("Error No Main Function")
     print(symbol_table)
+    return symbol_table
+global var_num
+var_num = 0
+def search_table(ident,table):
+    for item in table:
+        if item[0] == ident:
+            return item
+    return -1
+def cgen(expr,symbol_table,temp_vars):
+    if "=" in expr:
+        print(expr[0] + expr[1] + cgen(expr[2:],symbol_table,temp_vars))
+    if expr[0] == ";":
+        return
+    if len(expr) == 1 and (search_table(expr[0],symbol_table) or expr[0].isdigit()):
+        temp_vars.append(expr[0])
+        print("_t"+str(len(temp_vars)-1)+" = " + expr[0])
+        return ("_t"+str(len(temp_vars)-1))
+
+def intermediate_representation(symbol_table,ast):
+    for item in PreOrderIter(ast):
+        if item.name == "FunctionDecl":
+            print(item.children[1].children[0].name)
+        if item.name == "Stmt":
+            protoexpression = findall(item, filter_=lambda node: len(node.children) <= 0)
+            expression = []
+            for item in protoexpression:
+                expression.append(item.name)
+            print(expression)
+            cgen(expression,symbol_table,[])
+
+        
+        
+
+
 if __name__ == "__main__":
     flag = 1
     symbol_table, read_order, line_num, lines = lexer()
     if flag:
         ast = parser(symbol_table, read_order, line_num, lines)
         if flag:
-            semantic(ast, symbol_table)
+            symbol_table = semantic(ast, symbol_table)
             if flag:
-                #call intermediate
+                #intermediate_representation(symbol_table,ast)
                 print()
                 if flag:
                     log_error("No Errors, Compiled Correctly")

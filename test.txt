@@ -18,15 +18,11 @@ interface faces {
 }
 */
 
-int hello ( int x ){
-    int a;
-    int b;
-    x = 1;
-
+int hello(int x){
     return x;
 }
-void main (){
-    string x;
+int main (){
+    int x;
     string[] y;
-    y = NewArray (0,string) ;
+    x = hello(1) ;
 }
