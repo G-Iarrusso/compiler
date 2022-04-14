@@ -1173,11 +1173,22 @@ def semantic(ast,symbol_table):
     return symbol_table
 global var_num
 var_num = 0
+def search_table(ident,table):
+    for item in table:
+        if item[0] == ident:
+            return item
+    return -1
+def cgen(expr,symbol_table,temp_vars):
+    if "=" in expr:
+        print(expr[0] + expr[1] + cgen(expr[2:],symbol_table,temp_vars))
+    if expr[0] == ";":
+        return
+    if len(expr) == 1 and (search_table(expr[0],symbol_table) or expr[0].isdigit()):
+        temp_vars.append(expr[0])
+        print("_t"+str(len(temp_vars)-1)+" = " + expr[0])
+        return ("_t"+str(len(temp_vars)-1))
 
 def intermediate_representation(symbol_table,ast):
-    temps = []
-    current_temp = 0
-    operands = ["*","/","+","-","%"]
     for item in PreOrderIter(ast):
         if item.name == "FunctionDecl":
             print(item.children[1].children[0].name)
@@ -1187,6 +1198,7 @@ def intermediate_representation(symbol_table,ast):
             for item in protoexpression:
                 expression.append(item.name)
             print(expression)
+            cgen(expression,symbol_table,[])
 
         
         
@@ -1200,7 +1212,7 @@ if __name__ == "__main__":
         if flag:
             symbol_table = semantic(ast, symbol_table)
             if flag:
-                intermediate_representation(symbol_table,ast)
+                #intermediate_representation(symbol_table,ast)
                 print()
                 if flag:
                     log_error("No Errors, Compiled Correctly")

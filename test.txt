@@ -18,13 +18,12 @@ interface faces {
 }
 */
 
-int hello ( int x ){
-    int a;
-    int b;
-    x = 1 + a + b;
-
-    return x;
-}
 int main (){
-    
+    int x;
+    string[] y;
+    x = hello ( 1 ) ;
+}
+
+int hello(int x){
+    return x;
 }
