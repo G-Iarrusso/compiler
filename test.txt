@@ -1,5 +1,9 @@
-void main (){
+int main (){
     int x;
-    int y;
-    x = 1;
+    string[] y;
+    x = hello ( 1 ) ;
+}
+
+int hello(int x){
+    return x;
 }

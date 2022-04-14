@@ -1032,10 +1032,12 @@ def semantic(ast,symbol_table):
                 print(node)
                 type, return_type = handle_expr_aux(node, prev_type, prev_return_type)
                 if type == -1:
-                    print("Bad Type")
+                    log_error("Semantic Error")
+                    log_error("Bad Type")
                     return False
                 if return_type == -1:
-                    print("Bad Return")
+                    log_error("Semantic Error")
+                    log_error("Bad Return")
                     return False
                 if prev_type == None and type != None:
                     prev_type = type
@@ -1053,12 +1055,12 @@ def semantic(ast,symbol_table):
                 if node.name == idents.name:
                     print("ident type")
                     type = idents.type
-        elif "Constant" in node.parent.name:
+        elif "Constant" in node.parent.name and len(node.parent.name) > 8:
             print("constants type")
             print(node.name)
-            constant_type = node.name
-            print(constant_type[0:-8])
-            type = constant_type[0:-8]
+            type = ""
+            for letter in node.parent.name[0:-8]:
+                type = type + letter
             print("Type")
             print(type)
         elif node.name in log_operators:
@@ -1106,10 +1108,9 @@ def semantic(ast,symbol_table):
             if node.name == "Expr":
                 out_come = handle_expr(node)
                 print(out_come)
-                return
+        print("Done Type Checking")
             
     type_checking()
-    return
     print([node.name for node in PreOrderIter(ast)])
     scope = 0
     scope_stack = [] 
