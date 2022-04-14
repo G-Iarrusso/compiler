@@ -1025,58 +1025,65 @@ def semantic(ast,symbol_table):
             self.context = context
     def handle_expr(expr_tree):
         print("Literal")
-        type,return_type = handle_expr_aux(expr_tree)
-        if type != -1:
-            print("Good Type")
-            if return_type != -1:
-                print("Good Retrun type")
-                return True
-        return False
-
-    def handle_expr_aux(expr_tree):
-        print("New itteration")
-        type = None
-        return_type = None
-        for pre, fill, node in RenderTree(expr_tree,style = AsciiStyle()):
-            print("%s%s" % (pre, node.name))
+        prev_type = None
+        prev_return_type= None
         for node in PreOrderIter(expr_tree):
             if node.children != None and node != expr_tree:
                 print(node)
-                type, return_type = handle_expr_aux(node)
-                
+                type, return_type = handle_expr_aux(node, prev_type, prev_return_type)
+                if type == -1:
+                    print("Bad Type")
+                    return False
+                if return_type == -1:
+                    print("Bad Return")
+                    return False
+                if prev_type == None and type != None:
+                    prev_type = type
+                if prev_return_type == None and return_type != None:
+                    prev_return_type = return_type
+        return True
+
+    def handle_expr_aux(node, prev_type, prev_return_type):
+        print("New itteration")
+        type = None
+        return_type = None
+        print("Went Else")
+        if node.name in symbol_table.keys():
+            for idents in known_idents:
+                if node.name == idents.name:
+                    print("ident type")
+                    type = idents.type
+        elif "Constant" in node.parent.name:
+            print("constants type")
+            print(node.name)
+            constant_type = node.name
+            print(constant_type[0:-8])
+            type = constant_type[0:-8]
+            print("Type")
+            print(type)
+        elif node.name in log_operators:
+            return_type = "Bool"
+        elif node.name in alg_operators:
+            return_type = "Alg"
+        if prev_type == None and type != None:
+            return type, None
+        if prev_return_type == None and return_type != None:
+            return None, return_type
+        if type!=None:
+            print("Type compare")
+            print(type)
+            print(prev_type)
+            if type == prev_type:
+                return type, None
             else:
-                print("Went Else")
-                if node.name in symbol_table.keys():
-                    for idents in known_idents:
-                        if node.name == idents.name:
-                            if type == None:
-                                type = idents.type
-                            elif type == -1 or type == idents.type:
-                                continue
-                            else:
-                                type = -1
-                elif "Constant" in node.parent.name:
-                    constant_type = node.parent.name[:-8]
-                    if type == None:
-                        type = constant_type
-                    elif type == -1 or type == constant_type:
-                        continue
-                    else:
-                        type = -1
-                elif node.name in log_operators:
-                    if return_type == None or return_type == "Alg":
-                        return_type = "Bool"
-                    elif return_type == -1 or return_type == "Bool":
-                        continue
-                    else:
-                        return_type = -1
-                elif node.name in alg_operators:
-                    if return_type == None:
-                        return_type = "Alg"
-                    elif return_type == -1 or return_type == "Bool" or return_type == "Alg":
-                        continue
-                    else:
-                        return_type = -1
+                return -1, None
+        if return_type != None:
+            if prev_return_type == "Bool":
+                return None, "Bool"
+            if prev_return_type == return_type:
+                return None, return_type
+            if prev_return_type == "Alg" and return_type == "Bool":
+                return None, return_type
         return type, return_type
 
     def type_checking():

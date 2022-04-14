@@ -1,5 +1,5 @@
 void main (){
     int x;
     int y;
-    x = 1 + "String";
+    x = 1;
 }
