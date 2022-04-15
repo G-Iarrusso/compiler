@@ -1048,7 +1048,8 @@ def semantic(ast,symbol_table):
 
     def handle_expr(expr_tree,
         prev_type = None,
-        prev_return_type= None):
+        prev_return_type= None,
+        target_type = None):
         print("Literal")
         for node in PreOrderIter(expr_tree):
             if node.children != None and node != expr_tree:
@@ -1066,6 +1067,13 @@ def semantic(ast,symbol_table):
                     prev_type = type
                 if prev_return_type == None and return_type != None:
                     prev_return_type = return_type
+        if target_type:
+            if prev_return_type == target_type:
+                return True
+            else:
+                log_error("Semantic Error")
+                log_error("Bad Return")
+                return False
         return True
 
     def handle_expr_aux(node, prev_type, prev_return_type):
@@ -1126,7 +1134,9 @@ def semantic(ast,symbol_table):
                 print("Starting Function Check")
                 return handle_expr(node, target_type)
         return False
-            
+    
+    def handle_bool_stmt(expr_tree):
+        return handle_expr(expr_tree, target_type="Bool")
     
     def type_checking():
         for node in PreOrderIter(ast):
@@ -1161,7 +1171,20 @@ def semantic(ast,symbol_table):
                 else:
                    type = node.children[0].name
                 outcome = handle_func(node, type)
-                print(outcome)
+            elif node.name == "IfStmt" or node.name == "WhileStmt":
+                outcome = handle_bool_stmt(node.children[2])
+            elif node.name == "ForStmt":
+                if len(node.children) == 5:
+                    outcome = handle_bool_stmt(node.children[2])
+                elif len(node.children) == 9:
+                    outcome = handle_bool_stmt(node.children[4])
+                else:
+                    outcome1 = handle_bool_stmt(node.children[2])
+                    outcome2 = handle_bool_stmt(node.children[4])
+                    outcome = (outcome1 != outcome2)
+            else:
+                continue
+            print(outcome)
         print("Done Type Checking")
             
     type_checking()
