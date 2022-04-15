@@ -4,6 +4,7 @@
 #2022-02-21
 #remove whitespace from reading
 #move to next buffer after reading runs out of chars
+from ast import FunctionDef
 from cmath import log
 from queue import Empty
 import re
@@ -159,6 +160,7 @@ def lexer():
             if "//" in lexeme:
                 print("comment complete")
             elif lexeme != "":
+                print("Comment Lexeme")
                 handle_lexeme()
             prev = lexeme 
             lexeme = ""
@@ -168,35 +170,48 @@ def lexer():
             lexeme = lexeme + token
         #handle lexeme
         elif (token == " " and '"' not in lexeme)or token=="eof" or token== ";" or token == ".":
-
             if (lexeme in keywords):
                 read_order.append([lexeme, "Keyword", line_num])
                 if token == ".":
                     read_order.append([token, "operator", line_num])
-                prev = lexeme 
+                prev = lexeme
+                lexeme = ""
             elif (lexeme in operators):
                 read_order.append([lexeme, "Operator", line_num])
-                prev = lexeme 
+                prev = lexeme
+                lexeme = ""
             elif lexeme !="":
-                handle_lexeme()
-                prev = lexeme 
+                print(token)
+                print(lexeme)
+                print(integer_regex.fullmatch(token))
+                print(double_regex.fullmatch(lexeme))
+                if token == "." and integer_regex.fullmatch(lexeme):
+                    lexeme = lexeme + token
+                elif integer_regex.fullmatch(token) and double_regex.fullmatch(lexeme):
+                    lexeme = lexeme + token
+                else:
+                    print("terminal line / . lexeme")
+                    handle_lexeme()
+                    prev = lexeme
+                    lexeme = ""
             if token == ";":
                 read_order.append([";", "Operator", line_num])
-            lexeme = ""
+                lexeme = ""
         elif token in operators and '"' not in lexeme:
-            handle_lexeme()
-            read_order.append([token, "Operator", line_num])
-            prev = lexeme 
-            lexeme = ""
+                handle_lexeme()
+                read_order.append([token, "Operator", line_num])
+                prev = lexeme 
+                lexeme = ""
         elif token == '"' and '"' in lexeme:
             lexeme = lexeme +token
+            print("String Lexeme")
             handle_lexeme()
             prev = lexeme 
             lexeme = ""
         else:
             lexeme = lexeme + token
         cnt = cnt + 1
-    print("We done")
+    print(read_order)
     return symbol_table, read_order, line_num, lines
 
 def parser(symbol_table, read_order, line_num, lines):
@@ -1023,10 +1038,11 @@ def semantic(ast,symbol_table):
             self.name = name
             self.type = type
             self.context = context
-    def handle_expr(expr_tree):
+
+    def handle_expr(expr_tree,
+        prev_type = None,
+        prev_return_type= None):
         print("Literal")
-        prev_type = None
-        prev_return_type= None
         for node in PreOrderIter(expr_tree):
             if node.children != None and node != expr_tree:
                 print(node)
@@ -1056,13 +1072,17 @@ def semantic(ast,symbol_table):
                     print("ident type")
                     type = idents.type
         elif "Constant" in node.parent.name and len(node.parent.name) > 8:
+            """
             print("constants type")
             print(node.name)
+            """
             type = ""
             for letter in node.parent.name[0:-8]:
                 type = type + letter
+            """
             print("Type")
             print(type)
+            """
         elif node.name in log_operators:
             return_type = "Bool"
         elif node.name in alg_operators:
@@ -1072,9 +1092,11 @@ def semantic(ast,symbol_table):
         if prev_return_type == None and return_type != None:
             return None, return_type
         if type!=None:
+            """
             print("Type compare")
             print(type)
             print(prev_type)
+            """
             if type == prev_type:
                 return type, None
             else:
@@ -1088,26 +1110,51 @@ def semantic(ast,symbol_table):
                 return None, return_type
         return type, return_type
 
+    def handle_func(expr_tree, target_type):
+        print("Function")
+        for pre, fill, node in RenderTree(expr_tree,style = AsciiStyle()):
+                print("%s%s" % (pre, node.name))
+        for node in PreOrderIter(expr_tree):
+            if node.name == "ReturnStmt" and node!= expr_tree:
+                print("Starting Function Check")
+                return handle_expr(node, target_type)
+        return False
+            
+    
     def type_checking():
         for node in PreOrderIter(ast):
             if node.name == "Variable":
                 new_ident = ident(node.children[1].children[0].name,node.children[0].children[0].name, "Var")
                 known_idents.append(new_ident)
-
             if node.name == "FunctionDecl":
+                print(node.children)
+                print("First child")
+                print(node.children[0].children)
                 if node.children[0].name == "Type":
-                    new_ident = ident(node.children[1].children[0].name, node.children[0].children[0].children[0].name, "Func")
+                    if node.children[0].children[0].name == "Ident":
+                        new_ident = ident(node.children[1].children[0].name, node.children[0].children[0].children[0].name, "Func")
+                    else:  
+                        new_ident = ident(node.children[1].children[0].name, node.children[0].children[0].name, "Func")
                 else:
                     new_ident = ident(node.children[1].children[0].name,node.children[0].name, "Func")
                 known_idents.append(new_ident)
-
             if node.name == "ClassDecl":
                 new_ident = ident(node.children[1].children[0].name,node.children[0].name, "Class")
                 known_idents.append(new_ident)
-            
             if node.name == "Expr":
                 out_come = handle_expr(node)
                 print(out_come)
+        for node in PreOrderIter(ast):
+            if node.name == "FunctionDecl":
+                if node.children[0].name == "Type":
+                    if node.children[0].children[0].name == "Ident":
+                        type = node.children[0].children[0].children[0].name
+                    else:  
+                        type = node.children[0].children[0].name
+                else:
+                   type = node.children[0].name
+                outcome = handle_func(node, type)
+                print(outcome)
         print("Done Type Checking")
             
     type_checking()

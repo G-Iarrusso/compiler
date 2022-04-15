@@ -1,8 +1,9 @@
 int hello(int x){
-    return x;
+    return (x+2);
 }
-int main (){
+int main(){
     int x;
     string[] y;
-    x = hello(1) ;
+    x = hello(1);
+    return 0;
 }
