@@ -1,6 +1,12 @@
 //hello
-/*
-class Cat {
+
+
+
+interface faces {
+    int add();
+}
+
+class Cat implements faces {
 string breed;
 string color;
 int age;
@@ -12,17 +18,14 @@ this.age = 0;
 }
 }
 
-interface faces {
-    int add();
-    string bling();
-}
-*/
-
-int hello(int x){
-    return x;
-}
 int main (){
     int x;
-    string[] y;
-    x = hello(1) ;
+    int i;
+
+    for (x = 1; i<x; x = x - 1){
+        i = i + 1;
+        if (i > 7) {
+            break ;
+        }
+    }
 }

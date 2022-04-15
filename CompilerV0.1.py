@@ -9,6 +9,7 @@ from queue import Empty
 import re
 from tkinter import Variable
 from anytree import Node, RenderTree, AsciiStyle, PreOrderIter, findall
+from sklearn.metrics import explained_variance_score
 
 output = open("error_log.txt", "w")
 output.write("Decaf Error Stack Trace\n")
@@ -168,7 +169,6 @@ def lexer():
             lexeme = lexeme + token
         #handle lexeme
         elif (token == " " and '"' not in lexeme)or token=="eof" or token== ";" or token == ".":
-
             if (lexeme in keywords):
                 read_order.append([lexeme, "Keyword", line_num])
                 if token == ".":
@@ -418,6 +418,7 @@ def parser(symbol_table, read_order, line_num, lines):
         root = Node("Stmt")
         print("Found a statement")
         if tokens[tokens_current][0] in symbol_table.keys() or "Constant" in tokens[tokens_current][1] or tokens[tokens_current][0] == "this" or tokens[tokens_current][0] == "new" or tokens[tokens_current][0] == "NewArray" or tokens[tokens_current][0] == "ReadInteger" or tokens[tokens_current][0] == "ReadLine" or tokens[tokens_current][0] == "!" or tokens[tokens_current][0] == "(" or tokens[tokens_current][0] == "-":
+            print("Enter Return1")
             if not Expr(root):
                 return -1
             if not Terminals(";",root):
@@ -426,42 +427,50 @@ def parser(symbol_table, read_order, line_num, lines):
                 root.parent = parentprime
                 return True
         elif tokens[tokens_current][0] == "{":
+            print("Enter Return2")
             if StmtBlock(root):
                 root.parent = parentprime
                 return True
             else:
                 return -1
         elif tokens[tokens_current][0] == "while":
+            print("Enter Return3")
             if WhileStmt(root):
                 root.parent = parentprime
                 return True
             else:
                 return -1
         elif tokens[tokens_current][0] == "for":
+            print("Enter Return4")
             if ForStmt(root):
                 root.parent = parentprime
                 return True
             else:
                 return -1
         elif tokens[tokens_current][0] == "return":
+            
+            print("Enter Return")
             if ReturnStmt(root):
                 root.parent = parentprime
                 return True
             else:
                 return -1
         elif tokens[tokens_current][0] == "if":
+            print("Enter Return5")
             if IfStmt(root):
                 root.parent = parentprime
                 return True
             else:
                 return -1
         elif tokens[tokens_current][0] == "Print":
+            print("Enter Return6")
             if PrintStmt(root):
                 root.parent = parentprime
                 return True
             else:
                 -1
         elif tokens[tokens_current][0] == "break":
+            print("Enter Return7")
             if BreakStmt(root):
                 root.parent = parentprime
                 return True
@@ -507,9 +516,10 @@ def parser(symbol_table, read_order, line_num, lines):
             return True
     def ReturnStmt(parentprime):
         root = Node("ReturnStmt")
+        print("Enter Return")
         if not Terminals("return",root):
             return False
-        Expr(root)
+        print(Expr(root))
         if not Terminals(";",root):
             return False
         else:
@@ -1050,14 +1060,44 @@ def semantic(ast,symbol_table):
         elif node.name == "ClassDecl" and scope == 0:
             in_class = True
             scope = node.children[1].children[0].name
-            symbol_table.append([node.children[1].children[0].name,0,"Class"])
+            implementations = []
+            implements = False
+            for kids in node.children:
+                if kids.name == "implements":
+                    implements = True
+                if implements == True and kids.name == "ident":
+                    implementations.append(kids.children[0].name)
+            symbol_table.append([node.children[1].children[0].name,0,"Class",implementations])
             scope_stack.append([scope,0])
+
+            #Get a list of all the functions we need
+            funcs = []
+            for imps in implementations:
+                for item in symbol_table:
+                    if item[0] == imps and item[2]=="Interface":
+                        funcs.extend(item[3])
+            #check if they exist in the class
+            nodes = findall(node, filter_=lambda node: node.name in ("FunctionDecl"))
+            for item in nodes:
+                if item.children[1].children[0].name in funcs:
+                    funcs.remove(item.children[1].children[0].name)
+            if len(funcs) > 0:
+                print("Uh Oh!")
+            else:
+                print("All Good")
+
+            
+
         
         elif node.name == "InterfaceDecl" and scope == 0:
             print("Found interface")
             in_interface = True
+            functions = []
             scope = node.children[1].children[0].name
-            symbol_table.append([node.children[1].children[0].name,0,"Interface"])
+            for item in node.descendants:
+                if item.name == "ident" and item.children[0].name != scope:
+                    functions.append(item.children[0].name)
+            symbol_table.append([node.children[1].children[0].name,0,"Interface",functions])
             scope_stack.append([scope,0])
 
         #Gets us out of the class scope
@@ -1071,6 +1111,14 @@ def semantic(ast,symbol_table):
 
         #Rules for scope
         #Variable Duplicates
+        if node.name == "break":
+            ancestors = []
+            for item in node.ancestors:
+                ancestors.append(item.name)
+            if "ForStmt" not in ancestors and "WhileStmt" not in ancestors:
+                    log_error("SEMANTIC ERROR ON LINE "+str(node.line_num))
+                    log_error("Break Without Loop: " + symbol) 
+        
         if node.name == "Variable":
             dupee = False
             symbol = node.children[1].children[0].name
@@ -1085,22 +1133,36 @@ def semantic(ast,symbol_table):
                 else:
                     symbol_table.append([symbol,scope,node.children[0].children[0].name,"Variable"])
                 scope_stack.append([symbol,scope])
-        #Function/Class Duplicates & adding novel functions to the scope if in class
+        
+        #Function/Class Duplicates & adding novel functions to the scope if in class or interface
         if (in_class == True or scope == 0 or in_interface == True) and (node.name == "FunctionDecl" or node.name == "Prototype"):
             print("class function")
             dupee = False
             symbol = node.children[1].children[0].name
-            for entry in scope_stack:
-                if entry[0] == symbol:
+
+            for entry in symbol_table:
+                if entry[0] == symbol and (entry[1]==0 or entry[1]==scope):
                     log_error("SEMANTIC ERROR ON LINE "+str(node.children[1].children[0].line_num))
                     log_error("Duplicate Declaration: " + symbol) 
                     dupee = True
+                
             if in_class == True or in_interface == True:
                 if node.children[0].name == "Type":
                     type = node.children[0].children[0].name
                 else:
                     type = "void"
-                symbol_table.append([node.children[1].children[0].name,scope,type,"Function"])
+            args = 0
+            if node.children[3].name == "Formals":
+                arg = findall(node.children[3], filter_=lambda node: node.name in ("Variable"))
+                args = len(arg)
+                type_arg = []
+                for item in arg:
+                    type_arg.append(item.children[0].children[0].name)
+                print(type_arg)
+                symbol_table.append([node.children[1].children[0].name,scope,type,"Function",args,type_arg])
+            else:
+                args = 0
+                symbol_table.append([node.children[1].children[0].name,scope,type,"Function",args])
                 scope_stack.append([symbol,scope])
         #NewArray Checking
         if node.name == "NewArray":
@@ -1108,7 +1170,6 @@ def semantic(ast,symbol_table):
             found = False
             for entry in symbol_table:
                 if entry[0] == possible_array and ("[]" in entry[2]):
-                    print("Found an array")
                     arr = entry
                     found = True 
             if found:
@@ -1140,7 +1201,7 @@ def semantic(ast,symbol_table):
             is_function = False
             #if we find the function get the number of arguments
             for item in symbol_table:
-                if item[0] == search and item[3] == "Function":
+                if len(item)>=5 and item[0] == search and item[3] == "Function":
                     is_function = True
                     args = item[4]
                     function = item
@@ -1171,6 +1232,7 @@ def semantic(ast,symbol_table):
         print("Error No Main Function")
     print(symbol_table)
     return symbol_table
+
 global var_num
 var_num = 0
 def search_table(ident,table):
@@ -1180,13 +1242,30 @@ def search_table(ident,table):
     return -1
 def cgen(expr,symbol_table,temp_vars):
     if "=" in expr:
-        print(expr[0] + expr[1] + cgen(expr[2:],symbol_table,temp_vars))
-    if expr[0] == ";":
+        vals = cgen(expr[2:],symbol_table,temp_vars)
+        print(expr[0] + expr[1] + vals)
         return
-    if len(expr) == 1 and (search_table(expr[0],symbol_table) or expr[0].isdigit()):
+
+    elif len(expr) >= 5:
+        cgen(expr[0],symbol_table,temp_vars) 
+        print(expr[1],end="")
+        cgen(expr[2:],symbol_table,temp_vars)
+        return 
+
+    elif len(expr)==3:
+        temp_vars.append(expr)
+        print("_t"+str(len(temp_vars)-1)+" = ",end ="")
+        for item in expr:
+            print(item,end="")
+        print()
+        return 
+
+    elif len(expr) == 1 and (search_table(expr[0],symbol_table) or expr[0].isdigit()):
         temp_vars.append(expr[0])
         print("_t"+str(len(temp_vars)-1)+" = " + expr[0])
-        return ("_t"+str(len(temp_vars)-1))
+        return 
+    else:
+        return
 
 def intermediate_representation(symbol_table,ast):
     for item in PreOrderIter(ast):
@@ -1197,7 +1276,7 @@ def intermediate_representation(symbol_table,ast):
             expression = []
             for item in protoexpression:
                 expression.append(item.name)
-            print(expression)
+            expression.pop()
             cgen(expression,symbol_table,[])
 
         
@@ -1207,6 +1286,7 @@ def intermediate_representation(symbol_table,ast):
 if __name__ == "__main__":
     flag = 1
     symbol_table, read_order, line_num, lines = lexer()
+    print(symbol_table)
     if flag:
         ast = parser(symbol_table, read_order, line_num, lines)
         if flag:
