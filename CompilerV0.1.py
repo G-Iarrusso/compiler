@@ -198,7 +198,14 @@ def lexer():
                 read_order.append([";", "Operator", line_num])
                 lexeme = ""
         elif token in operators and '"' not in lexeme:
-                handle_lexeme()
+                print("operators lexeme")
+                print(lexeme)
+                print(token)
+                print("Calling handler")
+                if lexeme in keywords:
+                    read_order.append([lexeme, "Keyword", line_num])
+                else:
+                    handle_lexeme()
                 read_order.append([token, "Operator", line_num])
                 prev = lexeme 
                 lexeme = ""

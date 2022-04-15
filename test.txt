@@ -1,6 +1,9 @@
 int hello(int x){
     return (x+2);
 }
+string name(){
+    return("Helo");
+}
 int main(){
     int x;
     string[] y;
