@@ -701,6 +701,8 @@ def parser(symbol_table, read_order, line_num, lines):
             print("Found a Cosntant")
             if not Constant(root):
                 return False
+            if not ExprPrime(root):
+                return False
             else: 
                 root.parent = parentprime
                 return True
