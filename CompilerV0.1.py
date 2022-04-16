@@ -1058,6 +1058,9 @@ def semantic(ast,symbol_table):
         prev_type = None,
         prev_return_type= None,
         target_type = None):
+        if prev_type == "bool":
+            target_type = "Bool"
+            prev_type = None
         for node in PreOrderIter(expr_tree):
             if node.children != None and node != expr_tree:
                 type, return_type = handle_expr_aux(node, prev_type, prev_return_type)
@@ -1072,7 +1075,7 @@ def semantic(ast,symbol_table):
                     prev_type = type
                 if prev_return_type == None and return_type != None:
                     prev_return_type = return_type
-        if prev_return_type == "Alg" and prev_type == "string":
+        if prev_return_type != None and prev_type == "string":
             return False 
         if target_type:
             if prev_return_type == target_type:
@@ -1083,9 +1086,9 @@ def semantic(ast,symbol_table):
 
     def handle_expr_aux(node, prev_type, prev_return_type):
         print("New itteration")
+        print(node.name)
         type = None
         return_type = None
-        print("Went Else")
         if node.name in symbol_table.keys():
             for idents in known_idents:
                 if node.name == idents.name:
@@ -1120,6 +1123,9 @@ def semantic(ast,symbol_table):
             if type == prev_type:
                 return type, None
             else:
+                print("Bad")
+                print(type)
+                print(prev_type)
                 return -1, None
         if return_type != None:
             if prev_return_type == "Bool":
@@ -1131,6 +1137,7 @@ def semantic(ast,symbol_table):
         return type, return_type
 
     def handle_func(expr_tree, target_type):
+        output = False
         print("Function")
         for pre, fill, node in RenderTree(expr_tree,style = AsciiStyle()):
                 print("%s%s" % (pre, node.name))
@@ -1206,7 +1213,10 @@ def semantic(ast,symbol_table):
                         log_error("Semantic Error On Line "+ str(find_line_num(node)))
                         log_error("Bad Statement, invalid Bool statement")
                 elif len(node.children) == 9:
-                    outcome = handle_bool_stmt(node.children[4])
+                    outcome1 = handle_bool_stmt(node.children[2])
+                    outcome2 = handle_bool_stmt(node.children[4])
+                    outcome3 = handle_bool_stmt(node.children[6])
+                    outcome = outcome2 == True and outcome1 == outcome3 and outcome1!=outcome2
                     if not outcome and [find_line_num(node),3] not in prev_errors:
                         log_error("Semantic Error On Line "+ str(find_line_num(node)))
                         log_error("Bad Statement, invalid Bool statement")
