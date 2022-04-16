@@ -21,7 +21,7 @@ interface faces {
 int hello ( int x ){
     int a;
     int b;
-    x = 1 + a * b;
+    x = (1 + a) * b + 4;
 
     return x;
 }
