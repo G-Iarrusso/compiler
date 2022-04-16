@@ -1242,45 +1242,67 @@ def search_table(ident,table):
         if item[0] == ident:
             return item
     return -1
-def cgen(expr,symbol_table,temp_vars):
+def cgen(expr,symbol_table,temp_vars,TAC):
     if "=" in expr:
-        vals = cgen(expr[2:],symbol_table,temp_vars)
-        print(expr[0] + expr[1] + vals)
-        return
+        vals = cgen(expr[2:],symbol_table,temp_vars,TAC)
+        TAC.append([expr[0] + expr[1] + vals+";"])
+        return len(temp_vars), TAC
 
     elif len(expr) >= 5:
-        vals1 = cgen(expr[0],symbol_table,temp_vars)
-        vals2 = cgen(expr[2:],symbol_table,temp_vars)
+        vals1 = cgen(expr[0],symbol_table,temp_vars,TAC)
+
+        vals2 = cgen(expr[2:],symbol_table,temp_vars,TAC)
         temp_vars.append(expr)
-        print("_t"+str(len(temp_vars)-1) + "=" + vals1 + expr[1] + vals2)
+        TAC.append(["_t"+str(len(temp_vars)-1) + "=" + vals1 + expr[1] + vals2+";"])
         return "_t"+str(len(temp_vars)-1)
 
     elif len(expr)==3:
+        temp = []
         temp_vars.append(expr)
-        print("_t"+str(len(temp_vars)-1)+" = ",end ="")
+        temp.append("_t"+str(len(temp_vars)-1)+" = ")
         for item in expr:
-            print(item,end="")
-        print()
+            temp[0] = temp[0] + item
+        temp[0] = temp[0] + ";"
+        TAC.append(temp)
         return "_t"+str(len(temp_vars)-1)
 
     elif len(expr) == 1 and (search_table(expr[0],symbol_table) or expr[0].isdigit()):
         temp_vars.append(expr[0])
-        print("_t"+str(len(temp_vars)-1)+" = " + expr[0])
+        TAC.append(["_t"+str(len(temp_vars)-1)+" = " + expr[0]+";"])
         return "_t"+str(len(temp_vars)-1)
     else:
-        return
-
+        return 
+#Take out semi colons and brackets
+def clean(list):
+    list.pop()
+    list = [s for s in list if s != "(" and s != ")"]
+    return list
 def intermediate_representation(symbol_table,ast):
     for item in PreOrderIter(ast):
         if item.name == "FunctionDecl":
-            print(item.children[1].children[0].name)
-        if item.name == "Stmt":
-            protoexpression = findall(item, filter_=lambda node: len(node.children) <= 0)
-            expression = []
-            for item in protoexpression:
-                expression.append(item.name)
-            expression.pop()
-            cgen(expression,symbol_table,[])
+            print(item.children[1].children[0].name + ":")
+            print("BeginFunc ",end = "")
+            expr = []
+            vars = len(findall(item, filter_=lambda node: node.name == "VariableDecl"))
+            for nodes in item.descendants: 
+                if nodes.name == "Stmt" and nodes.children[0].children[1].name == "=":
+                    protoexpression = findall(nodes, filter_=lambda node: len(node.children) <= 0)
+                    expression = []
+                    for item in protoexpression:
+                        expression.append(item.name)
+                    expression = clean(expression)
+                    temp_vars,this_expr = cgen(expression,symbol_table,[],[])
+                    expr.append(this_expr)
+                    vars = vars + temp_vars
+            print(vars)
+            if len(expr)>0:
+                j = 0
+                while j < len(expr):
+                    for i in expr[j]:
+                        print(i[0])
+                    j = j + 1
+
+            
 
         
         

@@ -21,10 +21,15 @@ interface faces {
 int hello ( int x ){
     int a;
     int b;
-    x = 1 + a * b;
+    x = (1 + a) * b + 4;
+    b = 4;
 
     return x;
 }
 int main (){
-
+    int x;
+    while (x<1){
+        x = x + 1;
+    }
+    x = 1 + 2 / 3 ;
 }
