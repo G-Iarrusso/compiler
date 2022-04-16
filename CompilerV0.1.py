@@ -1060,8 +1060,10 @@ def semantic(ast,symbol_table):
         target_type = None):
         for node in PreOrderIter(expr_tree):
             if node.children != None and node != expr_tree:
-                print(node)
                 type, return_type = handle_expr_aux(node, prev_type, prev_return_type)
+                print("Types")
+                print(prev_type)
+                print(prev_return_type)
                 if type == -1:
                     return False
                 if return_type == -1:
@@ -1070,6 +1072,8 @@ def semantic(ast,symbol_table):
                     prev_type = type
                 if prev_return_type == None and return_type != None:
                     prev_return_type = return_type
+        if prev_return_type == "Alg" and prev_type == "string":
+            return False 
         if target_type:
             if prev_return_type == target_type:
                 return True
@@ -1491,7 +1495,7 @@ if __name__ == "__main__":
         if flag:
             symbol_table = semantic(ast, symbol_table)
             if flag:
-                intermediate_representation(symbol_table,ast)
+                #intermediate_representation(symbol_table,ast)
                 print()
                 if flag:
                     log_error("No Errors, Compiled Correctly")
