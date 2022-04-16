@@ -1292,7 +1292,7 @@ if __name__ == "__main__":
         if flag:
             symbol_table = semantic(ast, symbol_table)
             if flag:
-                #intermediate_representation(symbol_table,ast)
+                intermediate_representation(symbol_table,ast)
                 print()
                 if flag:
                     log_error("No Errors, Compiled Correctly")
