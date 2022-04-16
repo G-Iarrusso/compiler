@@ -1082,7 +1082,8 @@ def semantic(ast,symbol_table):
                 if item.children[1].children[0].name in funcs:
                     funcs.remove(item.children[1].children[0].name)
             if len(funcs) > 0:
-                print("Uh Oh!")
+                log_error("SEMANTIC ERROR ON LINE "+str(node.children[1].children[0].line_num))
+                log_error("Did not implement all interface functions: " + node.children[1].children[0].name) 
             else:
                 print("All Good")
 
