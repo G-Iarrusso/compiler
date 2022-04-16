@@ -701,6 +701,8 @@ def parser(symbol_table, read_order, line_num, lines):
             print("Found a Cosntant")
             if not Constant(root):
                 return False
+            if not ExprPrime(root):
+                return False
             else: 
                 root.parent = parentprime
                 return True
@@ -1248,10 +1250,11 @@ def cgen(expr,symbol_table,temp_vars):
         return
 
     elif len(expr) >= 5:
-        cgen(expr[0],symbol_table,temp_vars) 
-        print(expr[1],end="")
-        cgen(expr[2:],symbol_table,temp_vars)
-        return 
+        vals1 = cgen(expr[0],symbol_table,temp_vars)
+        vals2 = cgen(expr[2:],symbol_table,temp_vars)
+        temp_vars.append(expr)
+        print("_t"+str(len(temp_vars)-1) + "=" + vals1 + expr[1] + vals2)
+        return "_t"+str(len(temp_vars)-1)
 
     elif len(expr)==3:
         temp_vars.append(expr)
@@ -1259,12 +1262,12 @@ def cgen(expr,symbol_table,temp_vars):
         for item in expr:
             print(item,end="")
         print()
-        return 
+        return "_t"+str(len(temp_vars)-1)
 
     elif len(expr) == 1 and (search_table(expr[0],symbol_table) or expr[0].isdigit()):
         temp_vars.append(expr[0])
         print("_t"+str(len(temp_vars)-1)+" = " + expr[0])
-        return 
+        return "_t"+str(len(temp_vars)-1)
     else:
         return
 
@@ -1293,7 +1296,7 @@ if __name__ == "__main__":
         if flag:
             symbol_table = semantic(ast, symbol_table)
             if flag:
-                #intermediate_representation(symbol_table,ast)
+                intermediate_representation(symbol_table,ast)
                 print()
                 if flag:
                     log_error("No Errors, Compiled Correctly")
