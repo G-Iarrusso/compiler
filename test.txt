@@ -1,5 +1,5 @@
 int hello(int x){
-    return (x+2);
+    return (x+2.0);
 }
 string name(){
     return("Helo");
