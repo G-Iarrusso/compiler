@@ -4,12 +4,8 @@
 #2022-02-21
 #remove whitespace from reading
 #move to next buffer after reading runs out of chars
-from cmath import log
-from queue import Empty
 import re
-from tkinter import Variable
-from anytree import Node, RenderTree, AsciiStyle, PreOrderIter, findall
-from sklearn.metrics import explained_variance_score
+from anytree import *
 
 output = open("error_log.txt", "w")
 output.write("Decaf Error Stack Trace\n")
@@ -160,6 +156,7 @@ def lexer():
             if "//" in lexeme:
                 print("comment complete")
             elif lexeme != "":
+                print("Comment Lexeme")
                 handle_lexeme()
             prev = lexeme 
             lexeme = ""
@@ -173,30 +170,51 @@ def lexer():
                 read_order.append([lexeme, "Keyword", line_num])
                 if token == ".":
                     read_order.append([token, "operator", line_num])
-                prev = lexeme 
+                prev = lexeme
+                lexeme = ""
             elif (lexeme in operators):
                 read_order.append([lexeme, "Operator", line_num])
-                prev = lexeme 
+                prev = lexeme
+                lexeme = ""
             elif lexeme !="":
-                handle_lexeme()
-                prev = lexeme 
+                print(token)
+                print(lexeme)
+                print(integer_regex.fullmatch(token))
+                print(double_regex.fullmatch(lexeme))
+                if token == "." and integer_regex.fullmatch(lexeme):
+                    lexeme = lexeme + token
+                elif integer_regex.fullmatch(token) and double_regex.fullmatch(lexeme):
+                    lexeme = lexeme + token
+                else:
+                    print("terminal line / . lexeme")
+                    handle_lexeme()
+                    prev = lexeme
+                    lexeme = ""
             if token == ";":
                 read_order.append([";", "Operator", line_num])
-            lexeme = ""
+                lexeme = ""
         elif token in operators and '"' not in lexeme:
-            handle_lexeme()
-            read_order.append([token, "Operator", line_num])
-            prev = lexeme 
-            lexeme = ""
+                print("operators lexeme")
+                print(lexeme)
+                print(token)
+                print("Calling handler")
+                if lexeme in keywords:
+                    read_order.append([lexeme, "Keyword", line_num])
+                else:
+                    handle_lexeme()
+                read_order.append([token, "Operator", line_num])
+                prev = lexeme 
+                lexeme = ""
         elif token == '"' and '"' in lexeme:
             lexeme = lexeme +token
+            print("String Lexeme")
             handle_lexeme()
             prev = lexeme 
             lexeme = ""
         else:
             lexeme = lexeme + token
         cnt = cnt + 1
-    print("We done")
+    print(read_order)
     return symbol_table, read_order, line_num, lines
 
 def parser(symbol_table, read_order, line_num, lines):
@@ -204,7 +222,6 @@ def parser(symbol_table, read_order, line_num, lines):
     read_order.append(["$","eof",line_num])
     global tokens
     global tokens_current
-    from anytree import Node, RenderTree, AsciiStyle
     tokens = read_order
     tokens_current = 0
     # one line of inputs is not then falses with an else of true
@@ -1028,6 +1045,184 @@ def parser(symbol_table, read_order, line_num, lines):
     return output
 
 def semantic(ast,symbol_table):
+    known_idents = []
+    alg_operators = parse("algebraic_ops.txt")
+    log_operators = parse("logical_ops.txt")
+    class ident:
+        def __init__(self,name,type,context):
+            self.name = name
+            self.type = type
+            self.context = context
+
+    def handle_expr(expr_tree,
+        prev_type = None,
+        prev_return_type= None,
+        target_type = None):
+        for node in PreOrderIter(expr_tree):
+            if node.children != None and node != expr_tree:
+                print(node)
+                type, return_type = handle_expr_aux(node, prev_type, prev_return_type)
+                if type == -1:
+                    return False
+                if return_type == -1:
+                    return False
+                if prev_type == None and type != None:
+                    prev_type = type
+                if prev_return_type == None and return_type != None:
+                    prev_return_type = return_type
+        if target_type:
+            if prev_return_type == target_type:
+                return True
+            else:
+                return False
+        return True
+
+    def handle_expr_aux(node, prev_type, prev_return_type):
+        print("New itteration")
+        type = None
+        return_type = None
+        print("Went Else")
+        if node.name in symbol_table.keys():
+            for idents in known_idents:
+                if node.name == idents.name:
+                    print("ident type")
+                    type = idents.type
+        elif "Constant" in node.parent.name and len(node.parent.name) > 8:
+            """
+            print("constants type")
+            print(node.name)
+            """
+            type = ""
+            for letter in node.parent.name[0:-8]:
+                type = type + letter
+            """
+            print("Type")
+            print(type)
+            """
+        elif node.name in log_operators:
+            return_type = "Bool"
+        elif node.name in alg_operators:
+            return_type = "Alg"
+        if prev_type == None and type != None:
+            return type, None
+        if prev_return_type == None and return_type != None:
+            return None, return_type
+        if type!=None:
+            """
+            print("Type compare")
+            print(type)
+            print(prev_type)
+            """
+            if type == prev_type:
+                return type, None
+            else:
+                return -1, None
+        if return_type != None:
+            if prev_return_type == "Bool":
+                return None, "Bool"
+            if prev_return_type == return_type:
+                return None, return_type
+            if prev_return_type == "Alg" and return_type == "Bool":
+                return None, return_type
+        return type, return_type
+
+    def handle_func(expr_tree, target_type):
+        print("Function")
+        for pre, fill, node in RenderTree(expr_tree,style = AsciiStyle()):
+                print("%s%s" % (pre, node.name))
+        for node in PreOrderIter(expr_tree):
+            if node.name == "ReturnStmt" and node!= expr_tree:
+                print("Starting Function Check")
+                output = handle_expr(node, target_type)
+                break
+        if output:
+            return True
+        return False
+    
+    def handle_bool_stmt(expr_tree):
+        return handle_expr(expr_tree, target_type="Bool")
+    
+    def find_line_num(ast):
+        for node in PostOrderIter(ast):
+            if node.line_num != None:
+                return node.line_num
+
+    def type_checking():
+        prev_errors = []
+        for node in PreOrderIter(ast):
+            if node.name == "Variable":
+                new_ident = ident(node.children[1].children[0].name,node.children[0].children[0].name, "Var")
+                known_idents.append(new_ident)
+            if node.name == "FunctionDecl":
+                print(node.children)
+                print("First child")
+                print(node.children[0].children)
+                if node.children[0].name == "Type":
+                    if node.children[0].children[0].name == "Ident":
+                        new_ident = ident(node.children[1].children[0].name, node.children[0].children[0].children[0].name, "Func")
+                    else:  
+                        new_ident = ident(node.children[1].children[0].name, node.children[0].children[0].name, "Func")
+                else:
+                    new_ident = ident(node.children[1].children[0].name,node.children[0].name, "Func")
+                known_idents.append(new_ident)
+            if node.name == "ClassDecl":
+                new_ident = ident(node.children[1].children[0].name,node.children[0].name, "Class")
+                known_idents.append(new_ident)
+            if node.name == "Expr":
+                out_come = handle_expr(node)
+                if not out_come and [find_line_num(node),1] not in prev_errors:
+                    log_error("Semantic Error On Line "+ str(find_line_num(node)))
+                    log_error("Bad Expr, Type Mismatch")
+                    prev_errors.append([find_line_num(node),1])
+                print(out_come)
+        for node in PreOrderIter(ast):
+            if node.name == "FunctionDecl":
+                if node.children[0].name == "Type":
+                    if node.children[0].children[0].name == "Ident":
+                        type = node.children[0].children[0].children[0].name
+                    else:  
+                        type = node.children[0].children[0].name
+                else:
+                   type = node.children[0].name
+                outcome = handle_func(node, type)
+                if not outcome and [find_line_num(node),2] not in prev_errors:
+                    log_error("Semantic Error On Line "+ str(find_line_num(node)))
+                    log_error("Bad Function Return Type Mismatch")
+                    prev_errors.append([find_line_num(node),2])
+            elif node.name == "IfStmt" or node.name == "WhileStmt":
+                outcome = handle_bool_stmt(node.children[2])
+                if not outcome and [find_line_num(node),3] not in prev_errors:
+                    log_error("Semantic Error On Line "+ str(find_line_num(node)))
+                    log_error("Bad Statement, invalid Bool statement")
+                    prev_errors.append([find_line_num(node),3])
+            elif node.name == "ForStmt":
+                if len(node.children) == 5:
+                    outcome = handle_bool_stmt(node.children[2])
+                    if not outcome and [find_line_num(node),1] not in prev_errors:
+                        log_error("Semantic Error On Line "+ str(find_line_num(node)))
+                        log_error("Bad Statement, invalid Bool statement")
+                elif len(node.children) == 9:
+                    outcome = handle_bool_stmt(node.children[4])
+                    if not outcome and [find_line_num(node),3] not in prev_errors:
+                        log_error("Semantic Error On Line "+ str(find_line_num(node)))
+                        log_error("Bad Statement, invalid Bool statement")
+                        prev_errors.append([find_line_num(node),3])
+                else:
+                    outcome1 = handle_bool_stmt(node.children[2])
+                    outcome2 = handle_bool_stmt(node.children[4])
+                    outcome = (outcome1 != outcome2)
+                    if not outcome and [find_line_num(node),3] not in prev_errors:
+                        log_error("Semantic Error On Line "+ str(find_line_num(node)))
+                        log_error("Bad Statement, invalid Bool statement")
+                        prev_errors.append([find_line_num(node),3])
+
+            else:
+                continue
+            print(outcome)
+        print("Done Type Checking")
+            
+    type_checking()
+    print([node.name for node in PreOrderIter(ast)])
     scope = 0
     scope_stack = [] 
     symbol_table = []
