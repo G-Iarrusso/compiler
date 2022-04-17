@@ -1513,10 +1513,22 @@ def clean(list):
     list = [s for s in list if s != "(" and s != ")"]
     return list
 def intermediate_representation(symbol_table,ast):
+    code_rep = open("output.txt", "w")
+    code_rep.write("Intermediate Code Representation\n")
+    code_rep.close()
+    code_rep = open("output.txt", "a")
+    def tac_output(line, end=True):
+        #print(line)
+        global flag
+        flag = 0
+        if end:
+            code_rep.write(str(line)+"\n")
+        else:
+            code_rep.write(str(line))
     for item in PreOrderIter(ast):
         if item.name == "FunctionDecl":
-            print(item.children[1].children[0].name + ":")
-            print("BeginFunc ",end = "")
+            tac_output(item.children[1].children[0].name + ":")
+            tac_output("BeginFunc ",end = False)
             expr = []
             in_while = False
             vars = len(findall(item, filter_=lambda node: node.name == "VariableDecl"))
@@ -1546,12 +1558,12 @@ def intermediate_representation(symbol_table,ast):
                     in_while = True
                     vars = vars + temp_vars
                     
-            print(vars)
+            tac_output(vars*4)
             if len(expr)>0:
                 j = 0
                 while j < len(expr):
                     for i in expr[j]:
-                        print(i[0])
+                        tac_output(i[0])
                     j = j + 1
 
             
@@ -1569,7 +1581,7 @@ if __name__ == "__main__":
         if flag:
             symbol_table = semantic(ast, symbol_table)
             if flag:
-                #intermediate_representation(symbol_table,ast)
+                intermediate_representation(symbol_table,ast)
                 print()
                 if flag:
                     log_error("No Errors, Compiled Correctly")
