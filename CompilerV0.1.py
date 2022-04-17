@@ -32,7 +32,7 @@ def log_error(line):
 def lexer():
     variable_regex = re.compile("[a-zA-Z][0-9a-zA-Z_]*")
     integer_regex = re.compile("(-)?(([0-9]+)|(0(x|X)[0-9a-fA-F]+))")
-    double_regex = re.compile("(-)?(([0-9]+.[0-9]*)|([0-9]+.[0-9]*[eE][+-][0-9]+))")
+    double_regex = re.compile("(-)?(([0-9]+\.[0-9]*)|([0-9]+\.[0-9]*[eE][+-][0-9]+))")
     string_regex = re.compile('"[^"]*"')
     current_char = 0
     n = 4096
@@ -47,7 +47,7 @@ def lexer():
     def handle_lexeme():
         #Know identifier if statements
         #Most likely used in semantic analysis
-        
+        print(lexeme)
         if lexeme in symbol_table.keys():
             #Do nothing for right now
             read_order.append([lexeme, symbol_table.get(lexeme), line_num])
@@ -56,13 +56,13 @@ def lexer():
         #Unkonwn identifyer and previous was not a keyword
         #Most likely two literals following each other
         elif lexeme not in symbol_table.keys() and lexeme != "" :
-            if integer_regex.fullmatch(lexeme):
+            if integer_regex.fullmatch(lexeme)!= None:
                 print("integer lexeme:" + lexeme)
                 read_order.append([lexeme, "intConstant", line_num])
-            elif double_regex.fullmatch(lexeme):
+            elif double_regex.fullmatch(lexeme)!= None:
                 print("double lexeme:" + lexeme)
                 read_order.append([lexeme, "doubleConstant", line_num])
-            elif string_regex.fullmatch(lexeme):
+            elif string_regex.fullmatch(lexeme)!= None:
                 print("string lexeme:" + lexeme)
                 read_order.append([lexeme, "stringConstant", line_num])
             elif variable_regex.fullmatch(lexeme) != None:
@@ -1293,7 +1293,7 @@ def semantic(ast,symbol_table):
                 if item.children[1].children[0].name in funcs:
                     funcs.remove(item.children[1].children[0].name)
             if len(funcs) > 0:
-                log_error("SEMANTIC ERROR ON LINE "+str(node.children[1].children[0].line_num))
+                log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                 log_error("Did not implement all interface functions: " + node.children[1].children[0].name) 
             else:
                 print("All Good")
@@ -1328,7 +1328,7 @@ def semantic(ast,symbol_table):
             for item in node.ancestors:
                 ancestors.append(item.name)
             if "ForStmt" not in ancestors and "WhileStmt" not in ancestors:
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Break Without Loop: " + symbol) 
         
         if node.name == "Variable":
@@ -1336,7 +1336,7 @@ def semantic(ast,symbol_table):
             symbol = node.children[1].children[0].name
             for entry in scope_stack:
                 if entry[0] == symbol and (entry[1] == scope or entry[1]==0):
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.children[1].children[0].line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Duplicate Declaration: " + symbol) 
                     dupee = True   
             if dupee != True:    
@@ -1354,7 +1354,7 @@ def semantic(ast,symbol_table):
 
             for entry in symbol_table:
                 if entry[0] == symbol and (entry[1]==0 or entry[1]==scope):
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.children[1].children[0].line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Duplicate Declaration: " + symbol) 
                     dupee = True
                 
@@ -1388,14 +1388,14 @@ def semantic(ast,symbol_table):
                 arr_type = node.parent.children[4].children[0].name
                 
                 if not(arr_type in arr[2]):
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorrect Array Type: " + "NewArray") 
                 amount = node.parent.children[2].children[0].children[0]
                 if amount.name != "intConstant":
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorrect length: " + "NewArray") 
                 if int(amount.children[0].name) <=0:
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Arrays cannot be 0: " + "NewArray") 
         #Undeclared Identifiers
         if node.name == "ident":
@@ -1405,7 +1405,7 @@ def semantic(ast,symbol_table):
                 if entry[0] == symbol2 and (entry[1] == scope or entry[1] == 0): 
                     found = True 
             if found != True:
-                log_error("SEMANTIC ERROR ON LINE "+str(node.children[0].line_num))
+                log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                 log_error("Undeclared Identifier: " + symbol2)
         #Funciton Checking
         if node.name == "ident":
@@ -1421,7 +1421,7 @@ def semantic(ast,symbol_table):
             if is_function and node.parent.children[2].name == "Actuals":
                 arg = findall(node.parent.children[2], filter_=lambda node: node.name in ("ident","Constant"))
                 if args != len(arg):
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.children[0].line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorret number of Arguments: " + search)
                 if args>0:
                     comparators = []
@@ -1433,15 +1433,15 @@ def semantic(ast,symbol_table):
                             if item[0] == to_compare and item[1] == scope:
                                 comparators.append(item[2])
                     if comparators != function[5]:
-                        log_error("SEMANTIC ERROR ON LINE "+str(node.children[0].line_num))
+                        log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                         log_error("Incorret type of Arguments: " + search)
     has_main = False
     for item in symbol_table:
         if item[0] == "main":
             has_main = True
     if has_main == False:
-        log_error("SEMANTIC ERROR ON LINE "+str(0))
-        print("Error No Main Function")
+        log_error("SEMANTIC ERROR ON LINE "+str(1))
+        log_error("Error No Main Function")
     print(symbol_table)
     return symbol_table
 

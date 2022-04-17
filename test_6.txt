@@ -1,0 +1,7 @@
+/*
+This shows lexical failure for bad naming
+*/
+int 1main(){
+    int 2x;
+    return(0);
+}

@@ -1,0 +1,34 @@
+/*
+This test is to show off the boolean in stmts
+*/
+bool name(){
+    return(1 == 1);
+}
+int main(){
+    int x;
+    return 0;
+    for(x=0;x>10;x=1){
+        x =1;
+    }
+    for(x>10){
+        x =1;
+    }
+    for(x=0;x>10){
+        x =1;
+    }
+    for(x>10;x=1){
+        x =1;
+    }
+    if(x==1){
+        x=2;
+    }
+    while(x<10){
+        x=3;
+    }
+    for(x=0;x=10;x=1){
+        x =1;
+    }
+    for(x<0;x>10){
+        x =1;
+    }
+}

@@ -1,0 +1,8 @@
+/*
+This shows Semantic failure for no type not lexical
+*/
+int main(){
+    x;
+    y;
+    return(0);
+}
