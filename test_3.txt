@@ -1,0 +1,8 @@
+/*
+This shows semantic fail for no main
+*/
+int mian(){
+    int x;
+    int y;
+    return(0);
+}
