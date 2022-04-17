@@ -1,0 +1,8 @@
+/*
+This shows Syntax failure for no ;
+*/
+int main(){
+    int x;
+    y
+    return(0);
+}
