@@ -1522,6 +1522,13 @@ def in_ancestors(statement,node):
             return True
     return False
 
+def get_ancestors(statement,node):
+    ancestor = node.ancestors
+    for item in ancestor:
+        if item.name == statement:
+            return item
+    return None
+
 def intermediate_representation(symbol_table,ast):
     code_rep = open("output.txt", "w")
     code_rep.write("Intermediate Code Representation\n")
@@ -1546,7 +1553,13 @@ def intermediate_representation(symbol_table,ast):
     for item in PreOrderIter(ast):
 
         if item.name == "FunctionDecl":
-            tac_output(item.children[1].children[0].name + ":")
+            parent_class=""
+            vtable = ""
+            if get_ancestors("ClassDecl", item) != None:
+                parent_class = get_ancestors("ClassDecl", item).children[1].children[0].name
+                vtable = ("VTable "+parent_class+" = "+parent_class+"._"+item.children[1].children[0].name + ":")
+                parent_class = parent_class + "."                
+            tac_output(parent_class+"_"+item.children[1].children[0].name + ":")
             tac_output("BeginFunc ",end = False)
             expr = []
             in_while = False
@@ -1600,7 +1613,6 @@ def intermediate_representation(symbol_table,ast):
                     temps = combine(temps,temporaries)
                     expr.append(this_expr)
                     expr.append([["IfZ _L0 Goto _L1"]])
-                    
                     if in_ancestors("else",item):
                         in_elif = True
                     else:
@@ -1614,6 +1626,9 @@ def intermediate_representation(symbol_table,ast):
                     for i in expr[j]:
                         tac_output(i[0])
                     j = j + 1
+            tac_output("EndFunc;")
+            if vtable != "":
+                tac_output(vtable)
 
             
 
