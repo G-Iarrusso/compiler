@@ -1457,7 +1457,7 @@ def cgen(expr,symbol_table,temp_vars,TAC):
     if "=" in expr:
         vals = cgen(expr[2:],symbol_table,temp_vars,TAC)
         TAC.append([expr[0] + expr[1] + vals+";"])
-        return len(temp_vars), TAC
+        return len(temp_vars), TAC, temp_vars
 
     elif len(expr) >= 5:
         vals1 = cgen(expr[0],symbol_table,temp_vars,TAC)
@@ -1490,7 +1490,8 @@ def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
         vals2 = cgen(expr[2:],symbol_table,temp_vars,TAC)
         temp_vars.append(expr)
         TAC.append(["_t"+str(len(temp_vars)-1) + "=" + vals1 + expr[1] + vals2+";"])
-        return "_t"+str(len(temp_vars)-1),TAC,len(temp_vars)
+        print(temp_vars)
+        return "_t"+str(len(temp_vars)-1),TAC,len(temp_vars),temp_vars
 
     elif len(expr)==3:
         temp = []
@@ -1500,7 +1501,7 @@ def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
             temp[0] = temp[0] + item
         temp[0] = temp[0] + ";"
         TAC.append(temp)
-        return "_t"+str(len(temp_vars)-1),TAC,len(temp_vars)
+        return "_t"+str(len(temp_vars)-1),TAC,len(temp_vars),temp_vars
 
     elif len(expr) == 1 and (search_table(expr[0],symbol_table) or expr[0].isdigit()):
         temp_vars.append(expr[0])
@@ -1526,6 +1527,13 @@ def intermediate_representation(symbol_table,ast):
     code_rep.write("Intermediate Code Representation\n")
     code_rep.close()
     code_rep = open("output.txt", "a")
+    def combine(list1,list2):
+        print(list1)
+        for item in list2:
+            if item not in list1:
+                list1.append(item)
+        print(list1)
+        return list1
     def tac_output(line, end=True):
         #print(line)
         global flag
@@ -1534,38 +1542,50 @@ def intermediate_representation(symbol_table,ast):
             code_rep.write(str(line)+"\n")
         else:
             code_rep.write(str(line))
+    temps = []
     for item in PreOrderIter(ast):
+
         if item.name == "FunctionDecl":
             tac_output(item.children[1].children[0].name + ":")
             tac_output("BeginFunc ",end = False)
             expr = []
             in_while = False
             in_if = False
+            in_elif = False
+            labels = 0
             vars = len(findall(item, filter_=lambda node: node.name == "VariableDecl"))
             for nodes in item.descendants: 
-                if nodes.name == "}" and in_ancestors("WhileStmt",nodes) == True and in_while==True:
+                if nodes.name == "}" and in_ancestors("WhileStmt",nodes) == True and in_while==True and in_if == False:
                     expr.append([["Goto _L0"]])
                     expr.append([["_L1:"]])
                     in_while = False
-                if nodes.name == "else":
-                    expr.append([["IfZ _L0 Goto _L1"]])
+                if nodes.name == "}" and in_ancestors("IfStmt",nodes) == True:
+                    expr.append([["Goto _L1"]])
                     expr.append([["_L1:"]])
-                    in_if = False
+                    if in_if == True:
+                        in_if = False
+                if nodes.name == "else" and in_elif == True:
+                    expr.append([["_L1:"]])
+                    in_elif = False
+                
                 if nodes.name == "Stmt" and nodes.children[0].children[1].name == "=":
                     expression = []
                     protoexpression = findall(nodes, filter_=lambda node: len(node.children) <= 0)
                     for item in protoexpression:
                         expression.append(item.name)
                     expression = clean(expression)
-                    temp_vars,this_expr = cgen(expression,symbol_table,[],[])
+                    temp_vars,this_expr,temporaries = cgen(expression,symbol_table,temps,[])
+                    temps = combine(temps,temporaries)
                     expr.append(this_expr)
                     vars = vars + temp_vars
+
                 if nodes.name == "WhileStmt":
                     expression = []
                     protoexpression = findall(nodes.children[2], filter_=lambda node: len(node.children) <= 0)
                     for item in protoexpression:
                         expression.append(item.name)
-                    placeholder,this_expr,temp_vars= cgen_aux(expression,symbol_table,[],[])
+                    placeholder,this_expr,temp_vars,temporaries= cgen_aux(expression,symbol_table,temps,[])
+                    temps = combine(temps,temporaries)
                     expr.append([["_L0:"]])
                     expr.append(this_expr)
                     expr.append([["IfZ _t0 Goto _L1"]])
@@ -1576,12 +1596,15 @@ def intermediate_representation(symbol_table,ast):
                     protoexpression = findall(nodes.children[2], filter_=lambda node: len(node.children) <= 0)
                     for item in protoexpression:
                         expression.append(item.name)
-                    placeholder,this_expr,temp_vars= cgen_aux(expression,symbol_table,[],[])
+                    placeholder,this_expr,temp_vars,temporaries= cgen_aux(expression,symbol_table,temps,[])
+                    temps = combine(temps,temporaries)
                     expr.append(this_expr)
                     expr.append([["IfZ _L0 Goto _L1"]])
                     
-                    
-                    in_if = True
+                    if in_ancestors("else",item):
+                        in_elif = True
+                    else:
+                        in_if = True
                     vars = vars + temp_vars
             tac_output(vars*4)
 
