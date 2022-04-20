@@ -4,12 +4,8 @@
 #2022-02-21
 #remove whitespace from reading
 #move to next buffer after reading runs out of chars
-from cmath import log
-from queue import Empty
 import re
-from tkinter import Variable
-from anytree import Node, RenderTree, AsciiStyle, PreOrderIter, findall
-from sklearn.metrics import explained_variance_score
+from anytree import *
 
 output = open("error_log.txt", "w")
 output.write("Decaf Error Stack Trace\n")
@@ -36,7 +32,7 @@ def log_error(line):
 def lexer():
     variable_regex = re.compile("[a-zA-Z][0-9a-zA-Z_]*")
     integer_regex = re.compile("(-)?(([0-9]+)|(0(x|X)[0-9a-fA-F]+))")
-    double_regex = re.compile("(-)?(([0-9]+.[0-9]*)|([0-9]+.[0-9]*[eE][+-][0-9]+))")
+    double_regex = re.compile("(-)?(([0-9]+\.[0-9]*)|([0-9]+\.[0-9]*[eE][+-][0-9]+))")
     string_regex = re.compile('"[^"]*"')
     current_char = 0
     n = 4096
@@ -51,7 +47,7 @@ def lexer():
     def handle_lexeme():
         #Know identifier if statements
         #Most likely used in semantic analysis
-        
+        print(lexeme)
         if lexeme in symbol_table.keys():
             #Do nothing for right now
             read_order.append([lexeme, symbol_table.get(lexeme), line_num])
@@ -60,13 +56,13 @@ def lexer():
         #Unkonwn identifyer and previous was not a keyword
         #Most likely two literals following each other
         elif lexeme not in symbol_table.keys() and lexeme != "" :
-            if integer_regex.fullmatch(lexeme):
+            if integer_regex.fullmatch(lexeme)!= None:
                 print("integer lexeme:" + lexeme)
                 read_order.append([lexeme, "intConstant", line_num])
-            elif double_regex.fullmatch(lexeme):
+            elif double_regex.fullmatch(lexeme)!= None:
                 print("double lexeme:" + lexeme)
                 read_order.append([lexeme, "doubleConstant", line_num])
-            elif string_regex.fullmatch(lexeme):
+            elif string_regex.fullmatch(lexeme)!= None:
                 print("string lexeme:" + lexeme)
                 read_order.append([lexeme, "stringConstant", line_num])
             elif variable_regex.fullmatch(lexeme) != None:
@@ -160,6 +156,7 @@ def lexer():
             if "//" in lexeme:
                 print("comment complete")
             elif lexeme != "":
+                print("Comment Lexeme")
                 handle_lexeme()
             prev = lexeme 
             lexeme = ""
@@ -173,30 +170,51 @@ def lexer():
                 read_order.append([lexeme, "Keyword", line_num])
                 if token == ".":
                     read_order.append([token, "operator", line_num])
-                prev = lexeme 
+                prev = lexeme
+                lexeme = ""
             elif (lexeme in operators):
                 read_order.append([lexeme, "Operator", line_num])
-                prev = lexeme 
+                prev = lexeme
+                lexeme = ""
             elif lexeme !="":
-                handle_lexeme()
-                prev = lexeme 
+                print(token)
+                print(lexeme)
+                print(integer_regex.fullmatch(token))
+                print(double_regex.fullmatch(lexeme))
+                if token == "." and integer_regex.fullmatch(lexeme):
+                    lexeme = lexeme + token
+                elif integer_regex.fullmatch(token) and double_regex.fullmatch(lexeme):
+                    lexeme = lexeme + token
+                else:
+                    print("terminal line / . lexeme")
+                    handle_lexeme()
+                    prev = lexeme
+                    lexeme = ""
             if token == ";":
                 read_order.append([";", "Operator", line_num])
-            lexeme = ""
+                lexeme = ""
         elif token in operators and '"' not in lexeme:
-            handle_lexeme()
-            read_order.append([token, "Operator", line_num])
-            prev = lexeme 
-            lexeme = ""
+                print("operators lexeme")
+                print(lexeme)
+                print(token)
+                print("Calling handler")
+                if lexeme in keywords:
+                    read_order.append([lexeme, "Keyword", line_num])
+                else:
+                    handle_lexeme()
+                read_order.append([token, "Operator", line_num])
+                prev = lexeme 
+                lexeme = ""
         elif token == '"' and '"' in lexeme:
             lexeme = lexeme +token
+            print("String Lexeme")
             handle_lexeme()
             prev = lexeme 
             lexeme = ""
         else:
             lexeme = lexeme + token
         cnt = cnt + 1
-    print("We done")
+    print(read_order)
     return symbol_table, read_order, line_num, lines
 
 def parser(symbol_table, read_order, line_num, lines):
@@ -204,7 +222,6 @@ def parser(symbol_table, read_order, line_num, lines):
     read_order.append(["$","eof",line_num])
     global tokens
     global tokens_current
-    from anytree import Node, RenderTree, AsciiStyle
     tokens = read_order
     tokens_current = 0
     # one line of inputs is not then falses with an else of true
@@ -1028,6 +1045,198 @@ def parser(symbol_table, read_order, line_num, lines):
     return output
 
 def semantic(ast,symbol_table):
+    known_idents = []
+    alg_operators = parse("algebraic_ops.txt")
+    log_operators = parse("logical_ops.txt")
+    class ident:
+        def __init__(self,name,type,context):
+            self.name = name
+            self.type = type
+            self.context = context
+
+    def handle_expr(expr_tree,
+        prev_type = None,
+        prev_return_type= None,
+        target_type = None):
+        if prev_type == "bool":
+            target_type = "Bool"
+            prev_type = None
+        for node in PreOrderIter(expr_tree):
+            if node.children != None and node != expr_tree:
+                type, return_type = handle_expr_aux(node, prev_type, prev_return_type)
+                print("Types")
+                print(prev_type)
+                print(prev_return_type)
+                if type == -1:
+                    return False
+                if return_type == -1:
+                    return False
+                if prev_type == None and type != None:
+                    prev_type = type
+                if prev_return_type == None and return_type != None:
+                    prev_return_type = return_type
+        if prev_return_type != None and prev_type == "string":
+            return False 
+        if target_type:
+            if prev_return_type == target_type:
+                return True
+            else:
+                return False
+        return True
+
+    def handle_expr_aux(node, prev_type, prev_return_type):
+        print("New itteration")
+        print(node.name)
+        type = None
+        return_type = None
+        if node.name in symbol_table.keys():
+            for idents in known_idents:
+                if node.name == idents.name:
+                    print("ident type")
+                    type = idents.type
+        elif "Constant" in node.parent.name and len(node.parent.name) > 8:
+            """
+            print("constants type")
+            print(node.name)
+            """
+            type = ""
+            for letter in node.parent.name[0:-8]:
+                type = type + letter
+            """
+            print("Type")
+            print(type)
+            """
+        elif node.name in log_operators:
+            return_type = "Bool"
+        elif node.name in alg_operators:
+            return_type = "Alg"
+        if prev_type == None and type != None:
+            return type, None
+        if prev_return_type == None and return_type != None:
+            return None, return_type
+        if type!=None:
+            """
+            print("Type compare")
+            print(type)
+            print(prev_type)
+            """
+            if type == prev_type:
+                return type, None
+            else:
+                print("Bad")
+                print(type)
+                print(prev_type)
+                return -1, None
+        if return_type != None:
+            if prev_return_type == "Bool":
+                return None, "Bool"
+            if prev_return_type == return_type:
+                return None, return_type
+            if prev_return_type == "Alg" and return_type == "Bool":
+                return None, return_type
+        return type, return_type
+
+    def handle_func(expr_tree, target_type):
+        output = False
+        print("Function")
+        for pre, fill, node in RenderTree(expr_tree,style = AsciiStyle()):
+                print("%s%s" % (pre, node.name))
+        for node in PreOrderIter(expr_tree):
+            if node.name == "ReturnStmt" and node!= expr_tree:
+                print("Starting Function Check")
+                output = handle_expr(node, target_type)
+                break
+        if output:
+            return True
+        return False
+    
+    def handle_bool_stmt(expr_tree):
+        return handle_expr(expr_tree, target_type="Bool")
+    
+    def find_line_num(ast):
+        for node in PostOrderIter(ast):
+            if node.line_num != None:
+                return node.line_num
+
+    def type_checking():
+        prev_errors = []
+        for node in PreOrderIter(ast):
+            if node.name == "Variable":
+                new_ident = ident(node.children[1].children[0].name,node.children[0].children[0].name, "Var")
+                known_idents.append(new_ident)
+            if node.name == "FunctionDecl":
+                print(node.children)
+                print("First child")
+                print(node.children[0].children)
+                if node.children[0].name == "Type":
+                    if node.children[0].children[0].name == "Ident":
+                        new_ident = ident(node.children[1].children[0].name, node.children[0].children[0].children[0].name, "Func")
+                    else:  
+                        new_ident = ident(node.children[1].children[0].name, node.children[0].children[0].name, "Func")
+                else:
+                    new_ident = ident(node.children[1].children[0].name,node.children[0].name, "Func")
+                known_idents.append(new_ident)
+            if node.name == "ClassDecl":
+                new_ident = ident(node.children[1].children[0].name,node.children[0].name, "Class")
+                known_idents.append(new_ident)
+            if node.name == "Expr":
+                out_come = handle_expr(node)
+                if not out_come and [find_line_num(node),1] not in prev_errors:
+                    log_error("Semantic Error On Line "+ str(find_line_num(node)))
+                    log_error("Bad Expr, Type Mismatch")
+                    prev_errors.append([find_line_num(node),1])
+                print(out_come)
+        for node in PreOrderIter(ast):
+            if node.name == "FunctionDecl":
+                if node.children[0].name == "Type":
+                    if node.children[0].children[0].name == "Ident":
+                        type = node.children[0].children[0].children[0].name
+                    else:  
+                        type = node.children[0].children[0].name
+                else:
+                   type = node.children[0].name
+                outcome = handle_func(node, type)
+                if not outcome and [find_line_num(node),2] not in prev_errors:
+                    log_error("Semantic Error On Line "+ str(find_line_num(node)))
+                    log_error("Bad Function Return Type Mismatch")
+                    prev_errors.append([find_line_num(node),2])
+            elif node.name == "IfStmt" or node.name == "WhileStmt":
+                outcome = handle_bool_stmt(node.children[2])
+                if not outcome and [find_line_num(node),3] not in prev_errors:
+                    log_error("Semantic Error On Line "+ str(find_line_num(node)))
+                    log_error("Bad Statement, invalid Bool statement")
+                    prev_errors.append([find_line_num(node),3])
+            elif node.name == "ForStmt":
+                if len(node.children) == 5:
+                    outcome = handle_bool_stmt(node.children[2])
+                    if not outcome and [find_line_num(node),1] not in prev_errors:
+                        log_error("Semantic Error On Line "+ str(find_line_num(node)))
+                        log_error("Bad Statement, invalid Bool statement")
+                elif len(node.children) == 9:
+                    outcome1 = handle_bool_stmt(node.children[2])
+                    outcome2 = handle_bool_stmt(node.children[4])
+                    outcome3 = handle_bool_stmt(node.children[6])
+                    outcome = outcome2 == True and outcome1 == outcome3 and outcome1!=outcome2
+                    if not outcome and [find_line_num(node),3] not in prev_errors:
+                        log_error("Semantic Error On Line "+ str(find_line_num(node)))
+                        log_error("Bad Statement, invalid Bool statement")
+                        prev_errors.append([find_line_num(node),3])
+                else:
+                    outcome1 = handle_bool_stmt(node.children[2])
+                    outcome2 = handle_bool_stmt(node.children[4])
+                    outcome = (outcome1 != outcome2)
+                    if not outcome and [find_line_num(node),3] not in prev_errors:
+                        log_error("Semantic Error On Line "+ str(find_line_num(node)))
+                        log_error("Bad Statement, invalid Bool statement")
+                        prev_errors.append([find_line_num(node),3])
+
+            else:
+                continue
+            print(outcome)
+        print("Done Type Checking")
+            
+    type_checking()
+    print([node.name for node in PreOrderIter(ast)])
     scope = 0
     scope_stack = [] 
     symbol_table = []
@@ -1084,7 +1293,8 @@ def semantic(ast,symbol_table):
                 if item.children[1].children[0].name in funcs:
                     funcs.remove(item.children[1].children[0].name)
             if len(funcs) > 0:
-                print("Uh Oh!")
+                log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
+                log_error("Did not implement all interface functions: " + node.children[1].children[0].name) 
             else:
                 print("All Good")
 
@@ -1118,7 +1328,7 @@ def semantic(ast,symbol_table):
             for item in node.ancestors:
                 ancestors.append(item.name)
             if "ForStmt" not in ancestors and "WhileStmt" not in ancestors:
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Break Without Loop: " + symbol) 
         
         if node.name == "Variable":
@@ -1126,7 +1336,7 @@ def semantic(ast,symbol_table):
             symbol = node.children[1].children[0].name
             for entry in scope_stack:
                 if entry[0] == symbol and (entry[1] == scope or entry[1]==0):
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.children[1].children[0].line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Duplicate Declaration: " + symbol) 
                     dupee = True   
             if dupee != True:    
@@ -1144,7 +1354,7 @@ def semantic(ast,symbol_table):
 
             for entry in symbol_table:
                 if entry[0] == symbol and (entry[1]==0 or entry[1]==scope):
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.children[1].children[0].line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Duplicate Declaration: " + symbol) 
                     dupee = True
                 
@@ -1178,14 +1388,14 @@ def semantic(ast,symbol_table):
                 arr_type = node.parent.children[4].children[0].name
                 
                 if not(arr_type in arr[2]):
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorrect Array Type: " + "NewArray") 
                 amount = node.parent.children[2].children[0].children[0]
                 if amount.name != "intConstant":
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorrect length: " + "NewArray") 
                 if int(amount.children[0].name) <=0:
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Arrays cannot be 0: " + "NewArray") 
         #Undeclared Identifiers
         if node.name == "ident":
@@ -1195,7 +1405,7 @@ def semantic(ast,symbol_table):
                 if entry[0] == symbol2 and (entry[1] == scope or entry[1] == 0): 
                     found = True 
             if found != True:
-                log_error("SEMANTIC ERROR ON LINE "+str(node.children[0].line_num))
+                log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                 log_error("Undeclared Identifier: " + symbol2)
         #Funciton Checking
         if node.name == "ident":
@@ -1211,7 +1421,7 @@ def semantic(ast,symbol_table):
             if is_function and node.parent.children[2].name == "Actuals":
                 arg = findall(node.parent.children[2], filter_=lambda node: node.name in ("ident","Constant"))
                 if args != len(arg):
-                    log_error("SEMANTIC ERROR ON LINE "+str(node.children[0].line_num))
+                    log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorret number of Arguments: " + search)
                 if args>0:
                     comparators = []
@@ -1223,15 +1433,15 @@ def semantic(ast,symbol_table):
                             if item[0] == to_compare and item[1] == scope:
                                 comparators.append(item[2])
                     if comparators != function[5]:
-                        log_error("SEMANTIC ERROR ON LINE "+str(node.children[0].line_num))
+                        log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                         log_error("Incorret type of Arguments: " + search)
     has_main = False
     for item in symbol_table:
         if item[0] == "main":
             has_main = True
     if has_main == False:
-        log_error("SEMANTIC ERROR ON LINE "+str(0))
-        print("Error No Main Function")
+        log_error("SEMANTIC ERROR ON LINE "+str(1))
+        log_error("Error No Main Function")
     print(symbol_table)
     return symbol_table
 
@@ -1383,7 +1593,7 @@ if __name__ == "__main__":
         if flag:
             symbol_table = semantic(ast, symbol_table)
             if flag:
-                intermediate_representation(symbol_table,ast)
+                #intermediate_representation(symbol_table,ast)
                 print()
                 if flag:
                     log_error("No Errors, Compiled Correctly")
