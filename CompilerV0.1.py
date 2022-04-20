@@ -1484,6 +1484,7 @@ def cgen(expr,symbol_table,temp_vars,TAC):
     else:
         return 
 def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
+    print("Inside the temp")
     if len(expr) >= 5:
         vals1 = cgen(expr[0],symbol_table,temp_vars,TAC)
 
@@ -1504,9 +1505,10 @@ def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
         return "_t"+str(len(temp_vars)-1),TAC,len(temp_vars),temp_vars
 
     elif len(expr) == 1 and (search_table(expr[0],symbol_table) or expr[0].isdigit()):
+        print("In the weird case")
         temp_vars.append(expr[0])
         TAC.append(["_t"+str(len(temp_vars)-1)+" = " + expr[0]+";"])
-        return "_t"+str(len(temp_vars)-1)
+        return "_t"+str(len(temp_vars)-1), TAC,len(temp_vars),temp_vars
     else:
         return 
 #Take out semi colons and brackets
@@ -1590,7 +1592,8 @@ def intermediate_representation(symbol_table,ast):
                     temp_vars,this_expr,temporaries = cgen(expression,symbol_table,temps,[])
                     temps = combine(temps,temporaries)
                     expr.append(this_expr)
-                    vars = vars + temp_vars
+                    print(vars)
+                    vars = vars + (temp_vars - vars)
 
                 if nodes.name == "WhileStmt":
                     expression = []
@@ -1603,12 +1606,13 @@ def intermediate_representation(symbol_table,ast):
                     expr.append(this_expr)
                     expr.append([["IfZ _t0 Goto _L1"]])
                     in_while = True
-                    vars = vars + temp_vars
+                    vars = vars + (temp_vars - vars)
                 if nodes.name == "IfStmt":
                     expression = []
                     protoexpression = findall(nodes.children[2], filter_=lambda node: len(node.children) <= 0)
                     for item in protoexpression:
                         expression.append(item.name)
+                    print("Look here 2" + str(expression))
                     placeholder,this_expr,temp_vars,temporaries= cgen_aux(expression,symbol_table,temps,[])
                     temps = combine(temps,temporaries)
                     expr.append(this_expr)
@@ -1617,7 +1621,21 @@ def intermediate_representation(symbol_table,ast):
                         in_elif = True
                     else:
                         in_if = True
-                    vars = vars + temp_vars
+                    vars = vars + (temp_vars - vars)
+                if nodes.name == "ReturnStmt":
+                    expression = []
+                    protoexpression = findall(nodes, filter_=lambda node: len(node.children) <= 0)
+                    for item in protoexpression:
+                        expression.append(item.name)
+                    expression = clean(expression[1:])
+                    if len(expression) > 1:
+                        placeholder,this_expr,temp_vars,temporaries = cgen_aux(expression,symbol_table,temps,[])
+                        temps = combine(temps,temporaries)
+                        expr.append(this_expr)
+                        vars = vars + (temp_vars - vars)
+                        expr.append([["return _t"+str(len(temps)-1)+";"]])
+                    else:
+                        expr.append([["return " + str(expression[0]) + ";"]])
             tac_output(vars*4)
 
             if len(expr)>0:
