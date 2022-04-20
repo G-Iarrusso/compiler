@@ -1302,6 +1302,14 @@ def clean(list):
     list.pop()
     list = [s for s in list if s != "(" and s != ")"]
     return list
+#Determine where we are:
+def in_ancestors(statement,node):
+    ancestor = node.ancestors
+    for item in ancestor:
+        if item.name == statement:
+            return True
+    return False
+
 def intermediate_representation(symbol_table,ast):
     for item in PreOrderIter(ast):
         if item.name == "FunctionDecl":
@@ -1309,12 +1317,17 @@ def intermediate_representation(symbol_table,ast):
             print("BeginFunc ",end = "")
             expr = []
             in_while = False
+            in_if = False
             vars = len(findall(item, filter_=lambda node: node.name == "VariableDecl"))
             for nodes in item.descendants: 
-                if nodes.name == "}" and in_while == True:
-                    expr.append([["IfZ _L0 Goto _L1"]])
+                if nodes.name == "}" and in_ancestors("WhileStmt",nodes) == True and in_while==True:
+                    expr.append([["Goto _L0"]])
                     expr.append([["_L1:"]])
                     in_while = False
+                if nodes.name == "else":
+                    expr.append([["IfZ _L0 Goto _L1"]])
+                    expr.append([["_L1:"]])
+                    in_if = False
                 if nodes.name == "Stmt" and nodes.children[0].children[1].name == "=":
                     expression = []
                     protoexpression = findall(nodes, filter_=lambda node: len(node.children) <= 0)
@@ -1324,7 +1337,6 @@ def intermediate_representation(symbol_table,ast):
                     temp_vars,this_expr = cgen(expression,symbol_table,[],[])
                     expr.append(this_expr)
                     vars = vars + temp_vars
-                #this is so done for
                 if nodes.name == "WhileStmt":
                     expression = []
                     protoexpression = findall(nodes.children[2], filter_=lambda node: len(node.children) <= 0)
@@ -1333,9 +1345,21 @@ def intermediate_representation(symbol_table,ast):
                     placeholder,this_expr,temp_vars= cgen_aux(expression,symbol_table,[],[])
                     expr.append([["_L0:"]])
                     expr.append(this_expr)
+                    expr.append([["IfZ _t0 Goto _L1"]])
                     in_while = True
                     vars = vars + temp_vars
+                if nodes.name == "IfStmt":
+                    expression = []
+                    protoexpression = findall(nodes.children[2], filter_=lambda node: len(node.children) <= 0)
+                    for item in protoexpression:
+                        expression.append(item.name)
+                    placeholder,this_expr,temp_vars= cgen_aux(expression,symbol_table,[],[])
+                    expr.append(this_expr)
+                    expr.append([["IfZ _L0 Goto _L1"]])
                     
+                    
+                    in_if = True
+                    vars = vars + temp_vars
             print(vars)
             if len(expr)>0:
                 j = 0
