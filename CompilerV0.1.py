@@ -494,6 +494,7 @@ def parser(symbol_table, read_order, line_num, lines):
             else:
                 return -1
         else:
+            print("returning 0")
             return 0  
     def WhileStmt(parentprime):
         root = Node("WhileStmt")
@@ -555,11 +556,12 @@ def parser(symbol_table, read_order, line_num, lines):
         if not Stmt(root):
             return False
         if Terminals("else",root):
+            print("Going into statment")
             if not Stmt(root):
+                print("Bad statement")
                 return False
-        else:
-            root.parent = parentprime
-            return True
+        root.parent = parentprime
+        return True
     def PrintStmt(parentprime):
         root = Node("PrimtStmt")
         if not Terminals("Print",root):
@@ -1011,7 +1013,6 @@ def parser(symbol_table, read_order, line_num, lines):
     while (tokens[tokens_current][0] != "$" and len(tokens)>tokens_current):
         previous = tokens[tokens_current]
         output = program()
-        print(read_order)
         if output:
             for pre, fill, node in RenderTree(output,style = AsciiStyle()):
                 print("%s%s" % (pre, node.name))
@@ -1521,10 +1522,22 @@ def in_ancestors(statement,node):
     return False
 
 def intermediate_representation(symbol_table,ast):
+    code_rep = open("output.txt", "w")
+    code_rep.write("Intermediate Code Representation\n")
+    code_rep.close()
+    code_rep = open("output.txt", "a")
+    def tac_output(line, end=True):
+        #print(line)
+        global flag
+        flag = 0
+        if end:
+            code_rep.write(str(line)+"\n")
+        else:
+            code_rep.write(str(line))
     for item in PreOrderIter(ast):
         if item.name == "FunctionDecl":
-            print(item.children[1].children[0].name + ":")
-            print("BeginFunc ",end = "")
+            tac_output(item.children[1].children[0].name + ":")
+            tac_output("BeginFunc ",end = False)
             expr = []
             in_while = False
             in_if = False
@@ -1570,12 +1583,13 @@ def intermediate_representation(symbol_table,ast):
                     
                     in_if = True
                     vars = vars + temp_vars
-            print(vars)
+            tac_output(vars*4)
+
             if len(expr)>0:
                 j = 0
                 while j < len(expr):
                     for i in expr[j]:
-                        print(i[0])
+                        tac_output(i[0])
                     j = j + 1
 
             
@@ -1593,7 +1607,7 @@ if __name__ == "__main__":
         if flag:
             symbol_table = semantic(ast, symbol_table)
             if flag:
-                #intermediate_representation(symbol_table,ast)
+                intermediate_representation(symbol_table,ast)
                 print()
                 if flag:
                     log_error("No Errors, Compiled Correctly")
