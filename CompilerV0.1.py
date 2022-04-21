@@ -6,6 +6,7 @@
 #move to next buffer after reading runs out of chars
 import re
 from anytree import *
+from sympy import N
 
 output = open("error_log.txt", "w")
 output.write("Decaf Error Stack Trace\n")
@@ -1420,7 +1421,11 @@ def semantic(ast,symbol_table):
                     function = item
             #get the number of arguments in the call
             if is_function and node.parent.children[2].name == "Actuals":
-                arg = findall(node.parent.children[2], filter_=lambda node: node.name in ("ident","Constant"))
+                print("Apples")
+                print(args)
+                print(function)
+                arg = findall(node.parent.children[2].children, filter_=lambda node: node.name in ("ident","Constant"))
+                print(len(arg))
                 if args != len(arg):
                     log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorret number of Arguments: " + search)
@@ -1575,13 +1580,13 @@ def intermediate_representation(symbol_table,ast):
             label_stack = []
             vars = len(findall(item, filter_=lambda node: node.name == "VariableDecl"))
             for nodes in item.descendants: 
-                if nodes.name == "}" and in_ancestors("WhileStmt",nodes) == True and in_while>0 and in_if == False:
+                if nodes.name == "}" and in_ancestors("WhileStmt",nodes) == True and in_while>0 and (in_if == False and in_elif == False):
                     expr.append(label_stack.pop())
                     expr.append(label_stack.pop())
-                    labels = labels + 1
                     in_while = in_while-1
                 if nodes.name == "}" and in_ancestors("IfStmt",nodes) == True:
                     expr.append(label_stack.pop())
+                    labels = labels + 1
                     if in_if == True:
                         in_if = False
                 if nodes.name == "else" and in_elif == True:
@@ -1598,6 +1603,28 @@ def intermediate_representation(symbol_table,ast):
                     temps = combine(temps,temporaries)
                     expr.append(this_expr)
                     vars = vars + temp_vars
+                if nodes.name == "ForStmt":
+                    log_operators = parse("logical_ops.txt")
+                    cnt = len(nodes.children)
+                    expression = []
+                    if  cnt == 5:
+                        protoexpression = findall(nodes.children[2], filter_=lambda node: len(node.children) <= 0)
+                        for item in protoexpression:
+                            expression.append(item.name)
+                        expression = clean(expression)
+                        placeholder,this_expr,temp_vars,temporaries= cgen_aux(expression,symbol_table,temps,[])
+                    elif cnt == 9:
+                        protoexpression = findall(nodes.children[4], filter_=lambda node: len(node.children) <= 0)
+                        for item in protoexpression:
+                            expression.append(item.name)
+                        expression = clean(expression)
+                        placeholder,this_expr,temp_vars,temporaries= cgen_aux(expression,symbol_table,temps,[])
+                    elif cnt == 7:
+                        left = nodes.children[2].leaves
+                        right = nodes.children[4].leaves
+                        print(left)
+                        print(right)
+
 
                 if nodes.name == "WhileStmt":
                     expression = []
@@ -1614,6 +1641,7 @@ def intermediate_representation(symbol_table,ast):
                     labels = labels + 1
                     label_stack.append([["_L"+str(labels)+":"]])
                     label_stack.append(label_temp)
+                    labels = labels + 1
                     in_while = in_while+1
                     print(label_stack)
                     vars = vars + temp_vars
@@ -1635,6 +1663,7 @@ def intermediate_representation(symbol_table,ast):
                         label_stack.append([["_L"+str(labels)+":"]])
                         label_stack.append(label_temp)
                         label_stack.append([["Goto _L"+str(labels)]])
+                        labels = labels + 1
                         print(label_stack)
                         in_elif = True
                     else:
