@@ -1046,7 +1046,7 @@ def parser(symbol_table, read_order, line_num, lines):
         print(tokens[tokens_current:])
     return output
 
-def semantic(ast,symbol_table):
+def semantic(ast,symbol_table,old_symbol_table):
     known_idents = []
     alg_operators = parse("algebraic_ops.txt")
     log_operators = parse("logical_ops.txt")
@@ -1059,7 +1059,8 @@ def semantic(ast,symbol_table):
     def handle_expr(expr_tree,
         prev_type = None,
         prev_return_type= None,
-        target_type = None):
+        target_type = None,
+        return_target=False):
         if prev_type == "bool":
             target_type = "Bool"
             prev_type = None
@@ -1070,20 +1071,34 @@ def semantic(ast,symbol_table):
                 print(prev_type)
                 print(prev_return_type)
                 if type == -1:
+                    if return_target:
+                        return False, None
                     return False
                 if return_type == -1:
+                    if return_target:
+                        return False, None
                     return False
                 if prev_type == None and type != None:
                     prev_type = type
                 if prev_return_type == None and return_type != None:
                     prev_return_type = return_type
         if prev_return_type != None and prev_type == "string":
+            if return_target:
+                return False, None
             return False 
         if target_type:
             if prev_return_type == target_type:
+                if return_target:
+                    return True, prev_return_type
                 return True
             else:
+                if return_target:
+                    return False, None
                 return False
+        if return_target:
+            if prev_return_type == "Bool":
+                return True, prev_return_type
+            return True, prev_type
         return True
 
     def handle_expr_aux(node, prev_type, prev_return_type):
@@ -1091,7 +1106,7 @@ def semantic(ast,symbol_table):
         print(node.name)
         type = None
         return_type = None
-        if node.name in symbol_table.keys():
+        if node.name in old_symbol_table.keys():
             for idents in known_idents:
                 if node.name == idents.name:
                     print("ident type")
@@ -1421,26 +1436,30 @@ def semantic(ast,symbol_table):
                     function = item
             #get the number of arguments in the call
             if is_function and node.parent.children[2].name == "Actuals":
-                print("Apples")
-                print(args)
-                print(function)
-                arg = findall(node.parent.children[2].children, filter_=lambda node: node.name in ("ident","Constant"))
-                print(len(arg))
-                if args != len(arg):
+
+                comparators = []
+                for children in node.parent.children[2].children:
+                    if children.name == "Expr":
+                        output, type  = handle_expr(children, return_target=True)
+                        if type != None:
+                            comparators.append(type)
+                        print(output)
+                        print(type)
+                
+                actuals = node.parent.children[2].children
+                number_of_arguments = 0
+                for item in actuals:
+                    if item.name !=",":
+                        number_of_arguments = number_of_arguments + 1
+                if args != number_of_arguments:
                     log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorret number of Arguments: " + search)
+                
                 if args>0:
-                    comparators = []
-                    for item in arg:
-                        to_compare = item.children[0].name
-                        if "Constant" in to_compare:
-                            comparators.append(to_compare[0:-8])
-                        for item in symbol_table:
-                            if item[0] == to_compare and item[1] == scope:
-                                comparators.append(item[2])
                     if comparators != function[5]:
                         log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                         log_error("Incorret type of Arguments: " + search)
+                
     has_main = False
     for item in symbol_table:
         if item[0] == "main":
@@ -1489,6 +1508,7 @@ def cgen(expr,symbol_table,temp_vars,TAC):
     else:
         return 
 def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
+    print("Inside the temp")
     if len(expr) >= 5:
         vals1 = cgen(expr[0],symbol_table,temp_vars,TAC)
 
@@ -1509,6 +1529,7 @@ def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
         return "_t"+str(len(temp_vars)-1),TAC,len(temp_vars),temp_vars
 
     elif len(expr) == 1 and (search_table(expr[0],symbol_table) or expr[0].isdigit()):
+        print("In the weird case")
         temp_vars.append(expr[0])
         TAC.append(["_t"+str(len(temp_vars)-1)+" = " + expr[0]+";"])
         return "_t"+str(len(temp_vars)-1),TAC,len(temp_vars),temp_vars
@@ -1670,7 +1691,21 @@ def intermediate_representation(symbol_table,ast):
                         expr.append([["IfZ _t"+str(temp_vars-1)+" Goto _L"+str(labels)]])
                         label_stack.append([["_L"+str(labels)+":"]])
                         in_if = True
-                    vars = vars + temp_vars
+                    vars = vars + (temp_vars - vars)
+                if nodes.name == "ReturnStmt":
+                    expression = []
+                    protoexpression = findall(nodes, filter_=lambda node: len(node.children) <= 0)
+                    for item in protoexpression:
+                        expression.append(item.name)
+                    expression = clean(expression[1:])
+                    if len(expression) > 1:
+                        placeholder,this_expr,temp_vars,temporaries = cgen_aux(expression,symbol_table,temps,[])
+                        temps = combine(temps,temporaries)
+                        expr.append(this_expr)
+                        vars = vars + (temp_vars - vars)
+                        expr.append([["return _t"+str(len(temps)-1)+";"]])
+                    else:
+                        expr.append([["return " + str(expression[0]) + ";"]])
             tac_output(vars*4)
 
             if len(expr)>0:
@@ -1696,9 +1731,10 @@ if __name__ == "__main__":
     if flag:
         ast = parser(symbol_table, read_order, line_num, lines)
         if flag:
-            symbol_table = semantic(ast, symbol_table)
+            old_symbol_table = symbol_table
+            symbol_table = semantic(ast, symbol_table, old_symbol_table)
             if flag:
-                intermediate_representation(symbol_table,ast)
+                #intermediate_representation(symbol_table,ast)
                 print()
                 if flag:
                     log_error("No Errors, Compiled Correctly")
