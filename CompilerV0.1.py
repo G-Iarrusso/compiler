@@ -1420,26 +1420,39 @@ def semantic(ast,symbol_table):
                     function = item
             #get the number of arguments in the call
             if is_function and node.parent.children[2].name == "Actuals":
-                arg = findall(node.parent.children[2], filter_=lambda node: node.name in ("ident","Constant"))
+                arg = node.parent.children[2].leaves
                 
-                number_of_arguments = len(node.parent.children[2].children)
+                actuals = node.parent.children[2].children
+                number_of_arguments = 0
+                for item in actuals:
+                    if item.name !=",":
+                        number_of_arguments = number_of_arguments + 1
                 if args != number_of_arguments:
                     log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorret number of Arguments: " + search)
                 if args>0:
                     comparators = []
+                    temp = []
+                    print(arg)
+                    for argument in arg:
+                        temp.append(argument.name)
+                    listToStr = ' '.join([str(elem) for elem in temp])
+                    arg = listToStr.split(",")
+                    for item in arg:
+                        item = item.split
                     print(arg)
                     for item in arg:
                         to_compare = item.children[0].name
+                        print(to_compare)
                         if "Constant" in to_compare:
                             comparators.append(to_compare[0:-8])
                         for item in symbol_table:
                             if item[0] == to_compare and item[1] == scope:
                                 comparators.append(item[2])
-                    print(comparators)
                     if comparators != function[5]:
-                        log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
-                        log_error("Incorret type of Arguments: " + search)
+                        #log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
+                        #log_error("Incorret type of Arguments: " + search)
+                        print()
     has_main = False
     for item in symbol_table:
         if item[0] == "main":
@@ -1458,12 +1471,17 @@ def search_table(ident,table):
             return item
     return -1
 def cgen(expr,symbol_table,temp_vars,TAC):
+    print("Oranges")
+    print(expr)
     if "=" in expr:
         vals = cgen(expr[2:],symbol_table,temp_vars,TAC)
         TAC.append([expr[0] + expr[1] + vals+";"])
         return len(temp_vars), TAC, temp_vars
 
     elif len(expr) >= 5:
+        print("Apples")
+        print(expr[0])
+        print(expr[2:])
         vals1 = cgen(expr[0],symbol_table,temp_vars,TAC)
 
         vals2 = cgen(expr[2:],symbol_table,temp_vars,TAC)
