@@ -1045,7 +1045,7 @@ def parser(symbol_table, read_order, line_num, lines):
         print(tokens[tokens_current:])
     return output
 
-def semantic(ast,symbol_table):
+def semantic(ast,symbol_table,old_symbol_table):
     known_idents = []
     alg_operators = parse("algebraic_ops.txt")
     log_operators = parse("logical_ops.txt")
@@ -1058,7 +1058,8 @@ def semantic(ast,symbol_table):
     def handle_expr(expr_tree,
         prev_type = None,
         prev_return_type= None,
-        target_type = None):
+        target_type = None,
+        return_target=False):
         if prev_type == "bool":
             target_type = "Bool"
             prev_type = None
@@ -1069,20 +1070,34 @@ def semantic(ast,symbol_table):
                 print(prev_type)
                 print(prev_return_type)
                 if type == -1:
+                    if return_target:
+                        return False, None
                     return False
                 if return_type == -1:
+                    if return_target:
+                        return False, None
                     return False
                 if prev_type == None and type != None:
                     prev_type = type
                 if prev_return_type == None and return_type != None:
                     prev_return_type = return_type
         if prev_return_type != None and prev_type == "string":
+            if return_target:
+                return False, None
             return False 
         if target_type:
             if prev_return_type == target_type:
+                if return_target:
+                    return True, prev_return_type
                 return True
             else:
+                if return_target:
+                    return False, None
                 return False
+        if return_target:
+            if prev_return_type == "Bool":
+                return True, prev_return_type
+            return True, prev_type
         return True
 
     def handle_expr_aux(node, prev_type, prev_return_type):
@@ -1090,7 +1105,7 @@ def semantic(ast,symbol_table):
         print(node.name)
         type = None
         return_type = None
-        if node.name in symbol_table.keys():
+        if node.name in old_symbol_table.keys():
             for idents in known_idents:
                 if node.name == idents.name:
                     print("ident type")
@@ -1420,26 +1435,28 @@ def semantic(ast,symbol_table):
                     function = item
             #get the number of arguments in the call
             if is_function and node.parent.children[2].name == "Actuals":
-                arg = findall(node.parent.children[2], filter_=lambda node: node.name in ("ident","Constant"))
+                print("Lauda")
+                print(node.parent.children[2].name)
+                comparators = []
+                for children in node.parent.children[2].children:
+                    if children.name == "Expr":
+                        output, type  = handle_expr(children, return_target=True)
+                        if type != None:
+                            comparators.append(type)
+                        print("hill")
+                        print(output)
+                        print(type)
                 
                 number_of_arguments = len(node.parent.children[2].children)
                 if args != number_of_arguments:
                     log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorret number of Arguments: " + search)
+                
                 if args>0:
-                    comparators = []
-                    print(arg)
-                    for item in arg:
-                        to_compare = item.children[0].name
-                        if "Constant" in to_compare:
-                            comparators.append(to_compare[0:-8])
-                        for item in symbol_table:
-                            if item[0] == to_compare and item[1] == scope:
-                                comparators.append(item[2])
-                    print(comparators)
                     if comparators != function[5]:
                         log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                         log_error("Incorret type of Arguments: " + search)
+                
     has_main = False
     for item in symbol_table:
         if item[0] == "main":
@@ -1688,9 +1705,10 @@ if __name__ == "__main__":
     if flag:
         ast = parser(symbol_table, read_order, line_num, lines)
         if flag:
-            symbol_table = semantic(ast, symbol_table)
+            old_symbol_table = symbol_table
+            symbol_table = semantic(ast, symbol_table, old_symbol_table)
             if flag:
-                intermediate_representation(symbol_table,ast)
+                #intermediate_representation(symbol_table,ast)
                 print()
                 if flag:
                     log_error("No Errors, Compiled Correctly")
