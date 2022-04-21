@@ -1453,7 +1453,7 @@ def search_table(ident,table):
         if item[0] == ident:
             return item
     return -1
-def cgen(expr,symbol_table,temp_vars,TAC,old=None):
+def cgen(expr,symbol_table,temp_vars,TAC):
     print("Inside the cgen")
     print(expr)
     if "=" in expr:
@@ -1538,15 +1538,81 @@ def get_ancestors(statement,node):
         if item.name == statement:
             return item
     return None
-def push_to_stack(node, old):
+def handle_func_call(expr,symbol_table,temp_vars,TAC,functions):
     """
-    we may need to check if an expression is either a simpel x or a x +2(Expr)
+    we may need to check if an expression is either a simpel x or a x +2(Expr) or an x = 1 == expr()
     if we have expr we call that and have that pushed onto the stack
     this will then go through each argument push it on the stack, call the function, pop off the stack
-
-
     """
-    return
+    def find_func(func, expr):
+        cnt =0
+        for line in expr:
+            if line == func[0]:
+                return cnt
+            cnt  = cnt +1
+    print("schumi")
+    print(temp_vars)
+    for func in functions:
+        if func[4] == 0:
+            temp_vars.append(expr)
+            TAC.append(["_t"+str(len(temp_vars)-1)+" = Lcall "+func[0]+";"])
+            temp = find_func(func,expr)
+            expr[temp] = "_t"+str(len(temp_vars)-1)
+            expr.pop(temp+1)
+            expr.pop(temp+1)
+        else:
+            numOfArgs= 0
+            pushes = []
+            temp = find_func(func,expr) + 2
+            current_arg = []
+            while numOfArgs != func[4]:
+                if expr[temp] in [',',')']:
+                    numOfArgs = numOfArgs +1
+                    pushes.append(current_arg)
+                    current_arg = []
+                else:
+                    current_arg.append(expr[temp])
+                if expr[temp] == ')':
+                    break
+                temp = temp +1
+            for arg in pushes:
+                print("Alesi")
+                print(arg)
+                print("Ascari")
+                print(temp_vars)
+                placeholder,temp_vars,this_expr,temporaries = cgen_aux(arg,symbol_table,temp_vars,[])  
+                print("Farina")
+                print(temp_vars)
+                if len(arg) == 1:
+                    TAC.append (["PushParam "+ str(arg[0]) ])
+                else:
+                    TAC.append (["PushParam _t"+str(len(temp_vars)-1) ])
+            print("Mclaren")
+            print(temp_vars)
+            print("Mansel")
+            print("_t"+str(len(temp_vars)-1))
+            TAC.append (["_t"+str(len(temp_vars)-1)+" = Lcall "+func[0]+";"])
+            TAC.append (["PopParam "+str(func[4]*4)])
+            temp = find_func(func,expr)
+            expr[temp] = "_t"+str(len(temp_vars)-1)
+            numOfArgs= 0
+            print("Alonso")
+            print(expr)
+            print("Massa")
+            print(TAC)
+            while numOfArgs != func[4]:
+                if expr[temp+1] == ')':
+                    expr.pop(temp+1)
+                    break
+                if expr[temp+1] in [',',')']:
+                    numOfArgs = numOfArgs +1
+                expr.pop(temp+1)
+    expr = clean(expr)
+    if len(expr )>2:
+        if expr[1] == '=':
+            return cgen(expr,symbol_table,temp_vars,TAC)
+        else:
+            return cgen_aux(expr,symbol_table,temp_vars,TAC)
 
 
 def intermediate_representation(symbol_table,ast):
@@ -1606,12 +1672,24 @@ def intermediate_representation(symbol_table,ast):
                     protoexpression = findall(nodes, filter_=lambda node: len(node.children) <= 0)
                     for item in protoexpression:
                         expression.append(item.name)
-                    print(expression)
-                    old = expression
-                    expression = clean(expression)
-                    print(expression)
-                    temp_vars,this_expr,temporaries = cgen(expression,symbol_table,temps,[],old)
+                    functions = []
+                    for token in expression:
+                        for item in symbol_table:
+                            if item[3] == "Function" and token == item[0]:
+                                functions.append(item)
+                    if functions != []:
+                        print("Fangio")
+                        print(temps)
+                        temp_vars,this_expr,temporaries = handle_func_call(expression,symbol_table,temps,[],functions)
+                    else:
+                        expression = clean(expression)
+                        print(expression)
+                        temp_vars,this_expr,temporaries = cgen(expression,symbol_table,temps,[])
                     temps = combine(temps,temporaries)
+                    print("Vettel")
+                    print(expr)
+                    print("Weber")
+                    print(this_expr)
                     expr.append(this_expr)
                     print(vars)
                     vars = vars + (temp_vars - vars)
@@ -1658,7 +1736,8 @@ def intermediate_representation(symbol_table,ast):
                     else:
                         expr.append([["return " + str(expression[0]) + ";"]])
             tac_output(vars*4)
-
+            print("Senna")
+            print(expr)
             if len(expr)>0:
                 j = 0
                 while j < len(expr):
@@ -1666,7 +1745,10 @@ def intermediate_representation(symbol_table,ast):
                         tac_output(i[0])
                     j = j + 1
             tac_output("EndFunc;")
+            tac_output("")
             if vtable != "":
+                print("Prost")
+                print(vtable)
                 tac_output(vtable)
 
             
