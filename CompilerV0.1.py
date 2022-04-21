@@ -1453,9 +1453,15 @@ def search_table(ident,table):
         if item[0] == ident:
             return item
     return -1
-def cgen(expr,symbol_table,temp_vars,TAC):
+def cgen(expr,symbol_table,temp_vars,TAC,old=None):
+    print("Inside the cgen")
+    print(expr)
     if "=" in expr:
+        print("Look here")
+        print(expr)
         vals = cgen(expr[2:],symbol_table,temp_vars,TAC)
+        print("Vals return")
+        print(vals)
         TAC.append([expr[0] + expr[1] + vals+";"])
         return len(temp_vars), TAC, temp_vars
 
@@ -1467,7 +1473,7 @@ def cgen(expr,symbol_table,temp_vars,TAC):
         TAC.append(["_t"+str(len(temp_vars)-1) + "=" + vals1 + expr[1] + vals2+";"])
         return "_t"+str(len(temp_vars)-1)
 
-    elif len(expr)==3:
+    elif len(expr)==3 or len(expr)==2:
         temp = []
         temp_vars.append(expr)
         temp.append("_t"+str(len(temp_vars)-1)+" = ")
@@ -1482,7 +1488,9 @@ def cgen(expr,symbol_table,temp_vars,TAC):
         TAC.append(["_t"+str(len(temp_vars)-1)+" = " + expr[0]+";"])
         return "_t"+str(len(temp_vars)-1)
     else:
-        return 
+        return
+
+ 
 def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
     print("Inside the temp")
     if len(expr) >= 5:
@@ -1494,7 +1502,7 @@ def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
         print(temp_vars)
         return "_t"+str(len(temp_vars)-1),TAC,len(temp_vars),temp_vars
 
-    elif len(expr)==3:
+    elif len(expr)==3 or len(expr)==2:
         temp = []
         temp_vars.append(expr)
         temp.append("_t"+str(len(temp_vars)-1)+" = ")
@@ -1530,6 +1538,16 @@ def get_ancestors(statement,node):
         if item.name == statement:
             return item
     return None
+def push_to_stack(node, old):
+    """
+    we may need to check if an expression is either a simpel x or a x +2(Expr)
+    if we have expr we call that and have that pushed onto the stack
+    this will then go through each argument push it on the stack, call the function, pop off the stack
+
+
+    """
+    return
+
 
 def intermediate_representation(symbol_table,ast):
     code_rep = open("output.txt", "w")
@@ -1588,8 +1606,11 @@ def intermediate_representation(symbol_table,ast):
                     protoexpression = findall(nodes, filter_=lambda node: len(node.children) <= 0)
                     for item in protoexpression:
                         expression.append(item.name)
+                    print(expression)
+                    old = expression
                     expression = clean(expression)
-                    temp_vars,this_expr,temporaries = cgen(expression,symbol_table,temps,[])
+                    print(expression)
+                    temp_vars,this_expr,temporaries = cgen(expression,symbol_table,temps,[],old)
                     temps = combine(temps,temporaries)
                     expr.append(this_expr)
                     print(vars)

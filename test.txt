@@ -1,21 +1,12 @@
-class goat{
-bool name(){
-    return(1 == 1);
-}
+int name(int y, int x){
+    return(-1);
 }
 int main(){
     int x;
-    while(x<10){
-        x=3;
-    }
-
-    if (x<5){
-        x = 5;
-    }
-    else{
-        x = 10;
-    }
-    x = 1 + 2 / 3 ;
-
-    return x;
+    int y;
+    int z;
+    y = 1;
+    x = -1;
+    z = name(x,y) + 1;
+    return(z);
 }
