@@ -1421,11 +1421,14 @@ def semantic(ast,symbol_table):
             #get the number of arguments in the call
             if is_function and node.parent.children[2].name == "Actuals":
                 arg = findall(node.parent.children[2], filter_=lambda node: node.name in ("ident","Constant"))
-                if args != len(arg):
+                
+                number_of_arguments = len(node.parent.children[2].children)
+                if args != number_of_arguments:
                     log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorret number of Arguments: " + search)
                 if args>0:
                     comparators = []
+                    print(arg)
                     for item in arg:
                         to_compare = item.children[0].name
                         if "Constant" in to_compare:
@@ -1433,6 +1436,7 @@ def semantic(ast,symbol_table):
                         for item in symbol_table:
                             if item[0] == to_compare and item[1] == scope:
                                 comparators.append(item[2])
+                    print(comparators)
                     if comparators != function[5]:
                         log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                         log_error("Incorret type of Arguments: " + search)
