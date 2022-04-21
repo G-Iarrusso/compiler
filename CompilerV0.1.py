@@ -1506,7 +1506,7 @@ def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
     elif len(expr) == 1 and (search_table(expr[0],symbol_table) or expr[0].isdigit()):
         temp_vars.append(expr[0])
         TAC.append(["_t"+str(len(temp_vars)-1)+" = " + expr[0]+";"])
-        return "_t"+str(len(temp_vars)-1)
+        return "_t"+str(len(temp_vars)-1),TAC,len(temp_vars),temp_vars
     else:
         return 
 #Take out semi colons and brackets
@@ -1528,6 +1528,12 @@ def get_ancestors(statement,node):
         if item.name == statement:
             return item
     return None
+def in_children(statement,node):
+    children = node.children
+    for item in children:
+        if item.name == statement:
+            return True
+    return False
 
 def intermediate_representation(symbol_table,ast):
     code_rep = open("output.txt", "w")
@@ -1562,23 +1568,24 @@ def intermediate_representation(symbol_table,ast):
             tac_output(parent_class+"_"+item.children[1].children[0].name + ":")
             tac_output("BeginFunc ",end = False)
             expr = []
-            in_while = False
+            in_while = 0
             in_if = False
             in_elif = False
             labels = 0
+            label_stack = []
             vars = len(findall(item, filter_=lambda node: node.name == "VariableDecl"))
             for nodes in item.descendants: 
-                if nodes.name == "}" and in_ancestors("WhileStmt",nodes) == True and in_while==True and in_if == False:
-                    expr.append([["Goto _L0"]])
-                    expr.append([["_L1:"]])
-                    in_while = False
+                if nodes.name == "}" and in_ancestors("WhileStmt",nodes) == True and in_while>0 and in_if == False:
+                    expr.append(label_stack.pop())
+                    expr.append(label_stack.pop())
+                    labels = labels + 1
+                    in_while = in_while-1
                 if nodes.name == "}" and in_ancestors("IfStmt",nodes) == True:
-                    expr.append([["Goto _L1"]])
-                    expr.append([["_L1:"]])
+                    expr.append(label_stack.pop())
                     if in_if == True:
                         in_if = False
                 if nodes.name == "else" and in_elif == True:
-                    expr.append([["_L1:"]])
+                    expr.append(label_stack.pop())
                     in_elif = False
                 
                 if nodes.name == "Stmt" and nodes.children[0].children[1].name == "=":
@@ -1599,23 +1606,40 @@ def intermediate_representation(symbol_table,ast):
                         expression.append(item.name)
                     placeholder,this_expr,temp_vars,temporaries= cgen_aux(expression,symbol_table,temps,[])
                     temps = combine(temps,temporaries)
-                    expr.append([["_L0:"]])
+                    expr.append([["_L"+str(labels)+":"]])
+                    label_stack.append
                     expr.append(this_expr)
-                    expr.append([["IfZ _t0 Goto _L1"]])
-                    in_while = True
+                    expr.append([["IfZ _t"+str(temp_vars-1)+" Goto _L"+str(labels+1)]])
+                    label_temp = [["Goto _L"+str(labels)]]
+                    labels = labels + 1
+                    label_stack.append([["_L"+str(labels)+":"]])
+                    label_stack.append(label_temp)
+                    in_while = in_while+1
+                    print(label_stack)
                     vars = vars + temp_vars
+                
                 if nodes.name == "IfStmt":
                     expression = []
                     protoexpression = findall(nodes.children[2], filter_=lambda node: len(node.children) <= 0)
                     for item in protoexpression:
                         expression.append(item.name)
+                    print(expression)
                     placeholder,this_expr,temp_vars,temporaries= cgen_aux(expression,symbol_table,temps,[])
                     temps = combine(temps,temporaries)
                     expr.append(this_expr)
-                    expr.append([["IfZ _L0 Goto _L1"]])
-                    if in_ancestors("else",item):
+                    
+                    if in_children("else",nodes):
+                        expr.append([["IfZ _t"+str(temp_vars-1)+" Goto _L"+str(labels)]])
+                        label_temp = [["_L"+str(labels)+":"]]
+                        labels = labels + 1
+                        label_stack.append([["_L"+str(labels)+":"]])
+                        label_stack.append(label_temp)
+                        label_stack.append([["Goto _L"+str(labels)]])
+                        print(label_stack)
                         in_elif = True
                     else:
+                        expr.append([["IfZ _t"+str(temp_vars-1)+" Goto _L"+str(labels)]])
+                        label_stack.append([["_L"+str(labels)+":"]])
                         in_if = True
                     vars = vars + temp_vars
             tac_output(vars*4)
