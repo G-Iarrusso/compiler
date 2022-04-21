@@ -1435,19 +1435,21 @@ def semantic(ast,symbol_table,old_symbol_table):
                     function = item
             #get the number of arguments in the call
             if is_function and node.parent.children[2].name == "Actuals":
-                print("Lauda")
-                print(node.parent.children[2].name)
+
                 comparators = []
                 for children in node.parent.children[2].children:
                     if children.name == "Expr":
                         output, type  = handle_expr(children, return_target=True)
                         if type != None:
                             comparators.append(type)
-                        print("hill")
                         print(output)
                         print(type)
                 
-                number_of_arguments = len(node.parent.children[2].children)
+                actuals = node.parent.children[2].children
+                number_of_arguments = 0
+                for item in actuals:
+                    if item.name !=",":
+                        number_of_arguments = number_of_arguments + 1
                 if args != number_of_arguments:
                     log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorret number of Arguments: " + search)
