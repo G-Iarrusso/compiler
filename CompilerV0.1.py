@@ -1451,9 +1451,6 @@ def semantic(ast,symbol_table,old_symbol_table):
                     if item.name !=",":
                         number_of_arguments = number_of_arguments + 1
                 if args != number_of_arguments:
-                    print("Sainz")
-                    print(args)
-                    print(number_of_arguments)
                     log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorret number of Arguments: " + search)
                 
@@ -1542,8 +1539,13 @@ def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
         print("In the weird case")
         temp_vars.append(expr[0])
         TAC.append(["_t"+str(len(temp_vars)-1)+" = " + expr[0]+";"])
+        print("_t"+str(len(temp_vars)-1))
+        print(TAC)
+        print(len(temp_vars))
+        print(temp_vars)
         return "_t"+str(len(temp_vars)-1),TAC,len(temp_vars),temp_vars
     else:
+        print("What")
         return 
 #Take out semi colons and brackets
 def clean(list):
@@ -1576,9 +1578,15 @@ def handle_func_call(expr,symbol_table,temp_vars,TAC,functions):
             if line == func[0]:
                 return cnt
             cnt  = cnt +1
-    print("schumi")
-    print(temp_vars)
+    def get_function(functions, expr):
+        for func in functions:
+            if func[0] == expr:
+                return func
+        return None
+    print("Schumi")
     for func in functions:
+        if func[0] not in expr:
+            continue
         if func[4] == 0:
             temp_vars.append(expr)
             TAC.append(["_t"+str(len(temp_vars)-1)+" = Lcall "+func[0]+";"])
@@ -1589,43 +1597,56 @@ def handle_func_call(expr,symbol_table,temp_vars,TAC,functions):
         else:
             numOfArgs= 0
             pushes = []
+            print("vettel")
+            print(func)
+            print(expr)
             temp = find_func(func,expr) + 2
             current_arg = []
+            bracket_count = 0
             while numOfArgs != func[4]:
                 if expr[temp] in [',',')']:
+                    if expr[temp] == ')' and bracket_count!=0:
+                        current_arg.append(expr[temp])
                     numOfArgs = numOfArgs +1
                     pushes.append(current_arg)
                     current_arg = []
                 else:
                     current_arg.append(expr[temp])
-                if expr[temp] == ')':
+                    if expr[temp] == '(':
+                        print("")
+                        bracket_count = bracket_count +1
+                if expr[temp] == ')' and bracket_count  == 0:
                     break
+                elif expr[temp] == ')':
+                    bracket_count = bracket_count -1
                 temp = temp +1
+            print("Enzo")
+            print(pushes)
             for arg in pushes:
                 print("Alesi")
                 print(arg)
-                print("Ascari")
-                print(temp_vars)
-                placeholder,temp_vars,this_expr,temporaries = cgen_aux(arg,symbol_table,temp_vars,[])  
-                print("Farina")
-                print(temp_vars)
+                print(functions)
+                is_function = get_function(functions,arg[0])
+                if is_function != None:
+                    print("Max")
+                    print(arg)
+                    placeholder,temp_vars,this_expr,temporaries = handle_func_call(arg,symbol_table,temp_vars,[],functions) 
+                else:
+                    print("Checo")
+                    print(arg)
+                    placeholder,temp_vars,this_expr,temporaries = cgen_aux(arg,symbol_table,temp_vars,[])  
+
+                for item in temp_vars:
+                    TAC.append(item)
                 if len(arg) == 1:
                     TAC.append (["PushParam "+ str(arg[0]) ])
                 else:
-                    TAC.append (["PushParam _t"+str(len(temp_vars)-1) ])
-            print("Mclaren")
-            print(temp_vars)
-            print("Mansel")
-            print("_t"+str(len(temp_vars)-1))
+                    TAC.append (["PushParam _t"+str(this_expr-1)])
             TAC.append (["_t"+str(len(temp_vars)-1)+" = Lcall "+func[0]+";"])
             TAC.append (["PopParam "+str(func[4]*4)])
             temp = find_func(func,expr)
             expr[temp] = "_t"+str(len(temp_vars)-1)
             numOfArgs= 0
-            print("Alonso")
-            print(expr)
-            print("Massa")
-            print(TAC)
             while numOfArgs != func[4]:
                 if expr[temp+1] == ')':
                     expr.pop(temp+1)
@@ -1816,7 +1837,7 @@ if __name__ == "__main__":
             old_symbol_table = symbol_table
             symbol_table = semantic(ast, symbol_table, old_symbol_table)
             if flag:
-                #intermediate_representation(symbol_table,ast)
+                intermediate_representation(symbol_table,ast)
                 print()
                 if flag:
                     log_error("No Errors, Compiled Correctly")
