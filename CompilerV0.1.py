@@ -1275,7 +1275,10 @@ def semantic(ast,symbol_table,old_symbol_table):
                 arg = findall(node.children[3], filter_=lambda node: node.name == "Variable")
                 args = len(arg)
                 type_arg = []
+                print("Argumentas")
+                print(arg)
                 for item in arg:
+                    print(item)
                     type_arg.append(item.children[0].children[0].name)
                 print(type_arg)
                 symbol_table.append([node.children[1].children[0].name,0,type,"Function",args,type_arg])
@@ -1450,6 +1453,9 @@ def semantic(ast,symbol_table,old_symbol_table):
                 for item in actuals:
                     if item.name !=",":
                         number_of_arguments = number_of_arguments + 1
+                print("Apples")
+                print(number_of_arguments)
+                print(args)
                 if args != number_of_arguments:
                     log_error("SEMANTIC ERROR ON LINE "+str(find_line_num(node)))
                     log_error("Incorret number of Arguments: " + search)
@@ -1493,16 +1499,21 @@ def cgen(expr,symbol_table,temp_vars,TAC):
 
         vals2 = cgen(expr[2:],symbol_table,temp_vars,TAC)
         temp_vars.append(expr)
+        print("Charles")
+        print("_t"+str(len(temp_vars)-1) + "=" + vals1 + expr[1] + vals2+";")
         TAC.append(["_t"+str(len(temp_vars)-1) + "=" + vals1 + expr[1] + vals2+";"])
         return "_t"+str(len(temp_vars)-1)
 
     elif len(expr)==3 or len(expr)==2:
         temp = []
         temp_vars.append(expr)
+        print("Leclerc")
+        print("_t"+str(len(temp_vars)-1)+" = ")
         temp.append("_t"+str(len(temp_vars)-1)+" = ")
         for item in expr:
             temp[0] = temp[0] + item
         temp[0] = temp[0] + ";"
+        print(temp)
         TAC.append(temp)
         return "_t"+str(len(temp_vars)-1)
 
@@ -1601,6 +1612,7 @@ def handle_func_call(expr,symbol_table,temp_vars,TAC,functions):
             expr.pop(temp+1)
             expr.pop(temp+1)
         else:
+            print("Big function ")
             numOfArgs= 0
             pushes = []
             print("vettel")
@@ -1608,23 +1620,29 @@ def handle_func_call(expr,symbol_table,temp_vars,TAC,functions):
             print(expr)
             temp = find_func(func,expr) + 2
             current_arg = []
-            bracket_count = 0
+            bracket_count = 1
+            print("Albon")
             while numOfArgs != func[4]:
-                if expr[temp] in [',',')']:
-                    if expr[temp] == ')' and bracket_count!=0:
-                        current_arg.append(expr[temp])
+                print(expr[temp])
+                if expr[temp] =='(':
+                    bracket_count = bracket_count +1
+                    current_arg.append(expr[temp])
+                elif expr[temp] == ',' and bracket_count ==1 :
                     numOfArgs = numOfArgs +1
                     pushes.append(current_arg)
                     current_arg = []
+                elif expr[temp] == ',' and bracket_count !=1:
+                    current_arg.append(expr[temp])
+                elif expr[temp] ==')' and bracket_count != 1:
+                    bracket_count = bracket_count -1
+                    current_arg.append(expr[temp])
+                elif expr[temp] ==')' and bracket_count == 1:
+                    numOfArgs = numOfArgs +1
+                    pushes.append(current_arg)
+                    current_arg = []
+                    break
                 else:
                     current_arg.append(expr[temp])
-                    if expr[temp] == '(':
-                        print("")
-                        bracket_count = bracket_count +1
-                if expr[temp] == ')' and bracket_count  == 0:
-                    break
-                elif expr[temp] == ')':
-                    bracket_count = bracket_count -1
                 temp = temp +1
             print("Enzo")
             print(pushes)
@@ -1632,13 +1650,20 @@ def handle_func_call(expr,symbol_table,temp_vars,TAC,functions):
                 print("Alesi")
                 print(arg)
                 print(functions)
+                print(expr)
+                if len(arg) < 1:
+                    continue
                 is_function = get_function(functions,arg[0])
                 if is_function != None:
                     print("Max")
                     placeholder,temp_vars,this_expr,temporaries = handle_func_call(arg,symbol_table,temp_vars, [],functions) 
                 else:
                     print("Checo")
-                    placeholder,temp_vars,this_expr,temporaries = cgen_aux(arg,symbol_table,temp_vars,[])  
+                    print(temp_vars)
+                    print(arg)
+                    placeholder,temp_vars,this_expr,temporaries = cgen_aux(arg,symbol_table,temp_vars,[])
+                    print("russell")
+                    print(temp_vars) 
 
                 for item in temp_vars:
                     TAC.append(item)
@@ -1654,14 +1679,26 @@ def handle_func_call(expr,symbol_table,temp_vars,TAC,functions):
             print("Coulthard")
             expr[temp] = "_t"+str(len(temp_vars)-1)
             print("Mick")
+            print(expr)
             numOfArgs= 0
+            numOfBrack=0
             while numOfArgs != func[4]:
-                if expr[temp+1] == ')':
+                print(expr[temp+1])
+                print("Brack")
+                print(numOfBrack)
+                if expr[temp+1] =='(':
+                    numOfBrack = numOfBrack +1
+                    expr.pop(temp+1)
+                elif expr[temp+1] ==')' and numOfBrack != 0:
+                    numOfBrack = numOfBrack -1
+                    expr.pop(temp+1)
+                    if numOfBrack == 0:
+                        break
+                elif expr[temp+1] ==')' and numOfBrack == 0:
                     expr.pop(temp+1)
                     break
-                if expr[temp+1] in [',',')']:
-                    numOfArgs = numOfArgs +1
-                expr.pop(temp+1)
+                else:
+                    expr.pop(temp+1)
             print("Senna")
     print("Prost")
     print(expr)
@@ -1672,6 +1709,7 @@ def handle_func_call(expr,symbol_table,temp_vars,TAC,functions):
         print("hill")
         if expr[1] == '=':
             print('Hello')
+            print(expr)
             return cgen(expr,symbol_table,temp_vars,TAC)
     else:
         print('Goodbye')
@@ -1689,6 +1727,7 @@ def intermediate_representation(symbol_table,ast):
     code_rep.write("Intermediate Code Representation\n")
     code_rep.close()
     code_rep = open("output.txt", "a")
+    to_pop = []
     def combine(list1,list2):
         print(list1)
         for item in list2:
@@ -1720,22 +1759,35 @@ def intermediate_representation(symbol_table,ast):
             in_while = 0
             in_if = False
             in_elif = False
+            in_for = 0
             labels = 0
             label_stack = []
             vars = len(findall(item, filter_=lambda node: node.name == "VariableDecl"))
             for nodes in item.descendants: 
-                if nodes.name == "}" and in_ancestors("WhileStmt",nodes) == True and in_while>0 and in_if == False:
+                if nodes.name == "}" and in_ancestors("WhileStmt",nodes) == True and in_while>0 and (in_if == False and in_elif == False):
                     expr.append(label_stack.pop())
                     expr.append(label_stack.pop())
-                    labels = labels + 1
                     in_while = in_while-1
                 if nodes.name == "}" and in_ancestors("IfStmt",nodes) == True:
                     expr.append(label_stack.pop())
+                    labels = labels + 1
                     if in_if == True:
                         in_if = False
                 if nodes.name == "else" and in_elif == True:
                     expr.append(label_stack.pop())
                     in_elif = False
+                if nodes.name == "}" and in_ancestors("ForStmt",nodes) == True and (in_if == False and in_elif == False) and in_for>0:
+                    cnt2 = 0
+                    print(to_pop)
+                    if to_pop != []:
+                        cnt2 = to_pop.pop()
+                    while cnt2 > 0:
+                        expr.append(label_stack.pop())
+                        cnt2 = cnt2 - 1
+                    expr.append(label_stack.pop())
+                    expr.append(label_stack.pop())
+                    labels = labels + 1
+                    in_for = in_for -1 
                 
                 if nodes.name == "Stmt" and nodes.children[0].children[1].name == "=":
                     expression = []
@@ -1756,13 +1808,107 @@ def intermediate_representation(symbol_table,ast):
                         print(expression)
                         temp_vars,this_expr,temporaries = cgen(expression,symbol_table,temps,[])
                     temps = combine(temps,temporaries)
-                    print("Vettel")
-                    print(expr)
-                    print("Weber")
-                    print(this_expr)
                     expr.append(this_expr)
-                    print(vars)
-                    vars = vars + (temp_vars - vars)
+                    #vars = vars + temp_vars
+                if nodes.name == "ForStmt":
+                    log_operators = parse("logical_ops.txt")
+                    cnt = len(nodes.children)
+            
+                    expression = []
+                    side_chosen = None
+                    in_for = in_for + 1
+                    if  cnt == 5:
+                        protoexpression = findall(nodes.children[2], filter_=lambda node: len(node.children) <= 0)
+                        for item in protoexpression:
+                            expression.append(item.name)
+                        
+                        placeholder,this_expr,temp_vars,temporaries= cgen_aux(expression,symbol_table,temps,[])
+                    elif cnt == 9:
+                        protoexpression = findall(nodes.children[4], filter_=lambda node: len(node.children) <= 0)
+                        for item in protoexpression:
+                            expression.append(item.name)
+                        placeholder,this_expr,temp_vars,temporaries= cgen_aux(expression,symbol_table,temps,[])
+                    elif cnt == 7:
+                        first = nodes.children[2].leaves
+                        second = nodes.children[4].leaves
+                        side = 0
+                        for leafs in first:
+                            if leafs.name in log_operators:
+                                
+                                side = nodes.children[2]
+                            side_chosen = -1
+                            
+                        for leafs in second:
+                            if leafs.name in log_operators:
+                                
+                                side = nodes.children[4]
+                            side_chosen = 1
+                    
+                        protoexpression = findall(side, filter_=lambda node: len(node.children) <= 0)
+                        for item in protoexpression:
+                            expression.append(item.name)
+                        placeholder,this_expr,temp_vars,temporaries= cgen_aux(expression,symbol_table,temps,[])
+                    temps = combine(temps,temporaries)
+                    if cnt == 9:
+                        expr.append([["_L"+str(labels)+":"]])
+                        expr.append(this_expr)
+                        expr.append([["IfZ _t"+str(temp_vars-1)+" Goto _L"+str(labels+1)]])
+                        expression = []
+                        protoexpression = findall(nodes.children[6], filter_=lambda node: len(node.children) <= 0)
+                        for item in protoexpression:
+                            expression.append(item.name)
+                        print(expression)
+                        temp_vars,this_expr,temporaries = cgen(expression,symbol_table,temps,[])
+                        temps = combine(temps,temporaries)
+
+                        label_temp = [["Goto _L"+str(labels)]]
+                        labels = labels + 1
+                        label_stack.append([["_L"+str(labels)+":"]])
+                        label_stack.append(label_temp)
+                        this_expr.reverse()
+                        for item in this_expr:
+                            label_stack.append([item])
+                        to_pop.append(len(this_expr))
+                        labels = labels + 1
+
+                    elif cnt == 7 and side_chosen == 1:
+                        expr.append([["_L"+str(labels)+":"]])
+                        expr.append(this_expr)
+                        expr.append([["IfZ _t"+str(temp_vars-1)+" Goto _L"+str(labels+1)]])
+                        # get the per loop update
+                        expression = []
+                        protoexpression = findall(nodes.children[4], filter_=lambda node: len(node.children) <= 0)
+                        for item in protoexpression:
+                            expression.append(item.name)
+                        print(expression)
+                        temp_vars,this_expr,temporaries = cgen(expression,symbol_table,temps,[])
+                        temps = combine(temps,temporaries)
+
+                        label_temp = [["Goto _L"+str(labels)]]
+                        labels = labels + 1
+                        label_stack.append([["_L"+str(labels)+":"]])
+                        label_stack.append(label_temp)
+                        
+                        this_expr.reverse()
+                        for item in this_expr:
+                            label_stack.append([item])
+                        to_pop.append(len(this_expr))
+                        print(to_pop)
+                        labels = labels + 1
+                    else:
+                        expr.append([["_L"+str(labels)+":"]])
+                        expr.append(this_expr)
+                        expr.append([["IfZ _t"+str(temp_vars-1)+" Goto _L"+str(labels+1)]])
+
+                        label_temp = [["Goto _L"+str(labels)]]
+                        labels = labels + 1
+                        label_stack.append([["_L"+str(labels)+":"]])
+                        label_stack.append(label_temp)
+                        label_stack.append
+                        labels = labels + 1
+                    print(label_stack)
+                    #vars = vars + (temp_vars - vars)
+
 
                 if nodes.name == "WhileStmt":
                     expression = []
@@ -1772,16 +1918,17 @@ def intermediate_representation(symbol_table,ast):
                     placeholder,this_expr,temp_vars,temporaries= cgen_aux(expression,symbol_table,temps,[])
                     temps = combine(temps,temporaries)
                     expr.append([["_L"+str(labels)+":"]])
-                    label_stack.append
+                    #Not sure what if anything this does so we're commenting for now
+                    #label_stack.append
                     expr.append(this_expr)
                     expr.append([["IfZ _t"+str(temp_vars-1)+" Goto _L"+str(labels+1)]])
                     label_temp = [["Goto _L"+str(labels)]]
                     labels = labels + 1
                     label_stack.append([["_L"+str(labels)+":"]])
                     label_stack.append(label_temp)
+                    labels = labels + 1
                     in_while = in_while+1
-                    print(label_stack)
-                    vars = vars + temp_vars
+                    #vars = vars + temp_vars
                 
                 if nodes.name == "IfStmt":
                     expression = []
@@ -1800,13 +1947,13 @@ def intermediate_representation(symbol_table,ast):
                         label_stack.append([["_L"+str(labels)+":"]])
                         label_stack.append(label_temp)
                         label_stack.append([["Goto _L"+str(labels)]])
-                        print(label_stack)
+                        labels = labels + 1
                         in_elif = True
                     else:
                         expr.append([["IfZ _t"+str(temp_vars-1)+" Goto _L"+str(labels)]])
                         label_stack.append([["_L"+str(labels)+":"]])
                         in_if = True
-                    vars = vars + (temp_vars - vars)
+                    #vars = vars + (temp_vars - vars)
                 if nodes.name == "ReturnStmt":
                     expression = []
                     protoexpression = findall(nodes, filter_=lambda node: len(node.children) <= 0)
@@ -1817,12 +1964,13 @@ def intermediate_representation(symbol_table,ast):
                         placeholder,this_expr,temp_vars,temporaries = cgen_aux(expression,symbol_table,temps,[])
                         temps = combine(temps,temporaries)
                         expr.append(this_expr)
-                        vars = vars + (temp_vars - vars)
+                        #vars = vars + (temp_vars - vars)
                         expr.append([["return _t"+str(len(temps)-1)+";"]])
                     elif len(expression) == 1:
                         expr.append([["return " + str(expression[0]) + ";"]])
                     else:
-                        exprexpr.append([["return ;"]])
+                        expr.append([["return ;"]])
+            vars = vars + len(temps)
             tac_output(vars*4)
             print("Senna")
             print(expr)
