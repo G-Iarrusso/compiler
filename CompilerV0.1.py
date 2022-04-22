@@ -1549,7 +1549,8 @@ def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
         return 
 #Take out semi colons and brackets
 def clean(list):
-    list.pop()
+    if list[-1] == ";":
+        list.pop()
     list = [s for s in list if s != "(" and s != ")"]
     return list
 #Determine where we are:
@@ -1584,6 +1585,11 @@ def handle_func_call(expr,symbol_table,temp_vars,TAC,functions):
                 return func
         return None
     print("Schumi")
+    print(expr)
+    print(temp_vars)
+    print(symbol_table)
+    print(TAC)
+    print(functions)
     for func in functions:
         if func[0] not in expr:
             continue
@@ -1629,11 +1635,9 @@ def handle_func_call(expr,symbol_table,temp_vars,TAC,functions):
                 is_function = get_function(functions,arg[0])
                 if is_function != None:
                     print("Max")
-                    print(arg)
-                    placeholder,temp_vars,this_expr,temporaries = handle_func_call(arg,symbol_table,temp_vars,[],functions) 
+                    placeholder,temp_vars,this_expr,temporaries = handle_func_call(arg,symbol_table,temp_vars, [],functions) 
                 else:
                     print("Checo")
-                    print(arg)
                     placeholder,temp_vars,this_expr,temporaries = cgen_aux(arg,symbol_table,temp_vars,[])  
 
                 for item in temp_vars:
@@ -1642,10 +1646,14 @@ def handle_func_call(expr,symbol_table,temp_vars,TAC,functions):
                     TAC.append (["PushParam "+ str(arg[0]) ])
                 else:
                     TAC.append (["PushParam _t"+str(this_expr-1)])
+            print("Gilles")
             TAC.append (["_t"+str(len(temp_vars)-1)+" = Lcall "+func[0]+";"])
             TAC.append (["PopParam "+str(func[4]*4)])
+            print("jacques")
             temp = find_func(func,expr)
+            print("Coulthard")
             expr[temp] = "_t"+str(len(temp_vars)-1)
+            print("Mick")
             numOfArgs= 0
             while numOfArgs != func[4]:
                 if expr[temp+1] == ')':
@@ -1654,12 +1662,20 @@ def handle_func_call(expr,symbol_table,temp_vars,TAC,functions):
                 if expr[temp+1] in [',',')']:
                     numOfArgs = numOfArgs +1
                 expr.pop(temp+1)
+            print("Senna")
+    print("Prost")
+    print(expr)
     expr = clean(expr)
+    print("keanu")
+    print(expr)
     if len(expr )>2:
+        print("hill")
         if expr[1] == '=':
+            print('Hello')
             return cgen(expr,symbol_table,temp_vars,TAC)
-        else:
-            return cgen_aux(expr,symbol_table,temp_vars,TAC)
+    else:
+        print('Goodbye')
+        return cgen_aux(expr,symbol_table,temp_vars,TAC)
 
 def in_children(statement,node):
     children = node.children
@@ -1803,8 +1819,10 @@ def intermediate_representation(symbol_table,ast):
                         expr.append(this_expr)
                         vars = vars + (temp_vars - vars)
                         expr.append([["return _t"+str(len(temps)-1)+";"]])
-                    else:
+                    elif len(expression) == 1:
                         expr.append([["return " + str(expression[0]) + ";"]])
+                    else:
+                        exprexpr.append([["return ;"]])
             tac_output(vars*4)
             print("Senna")
             print(expr)

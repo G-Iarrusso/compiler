@@ -1,13 +1,13 @@
-int name(int x, int y){
+int name(int x){
     return(-1);
 }
 int game(int b){
-    return(1);
+    return(b);
 }
 int main(){
     int x;
     int z;
     x = 1;
-    z = name(x+1,game(1)) + 1;
+    z = name(game(x+1)+game(1+2)) + 1;
     return(z);
 }
