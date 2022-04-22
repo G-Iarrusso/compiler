@@ -1,10 +1,17 @@
-int name(int x){
-    return(-1);
+int place(){
+    int x;
+
+    return 1;
 }
+
 int main(){
     int x;
     int z;
-    x = 1;
-    z = name((x+1)) + 1;
-    return(z);
+    for(x>10;x=1){
+        x =1;
+        if(x==1){
+            z = 2;
+        }
+    }
+    return 0;
 }
