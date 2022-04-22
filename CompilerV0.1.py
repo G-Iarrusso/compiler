@@ -6,7 +6,6 @@
 #move to next buffer after reading runs out of chars
 import re
 from anytree import *
-from sympy import N
 
 output = open("error_log.txt", "w")
 output.write("Decaf Error Stack Trace\n")
@@ -1484,8 +1483,14 @@ def search_table(ident,table):
             return item
     return -1
 def cgen(expr,symbol_table,temp_vars,TAC):
+    print("Inside the cgen")
+    print(expr)
     if "=" in expr:
+        print("Look here")
+        print(expr)
         vals = cgen(expr[2:],symbol_table,temp_vars,TAC)
+        print("Vals return")
+        print(vals)
         TAC.append([expr[0] + expr[1] + vals+";"])
         return len(temp_vars), TAC, temp_vars
 
@@ -1494,16 +1499,21 @@ def cgen(expr,symbol_table,temp_vars,TAC):
 
         vals2 = cgen(expr[2:],symbol_table,temp_vars,TAC)
         temp_vars.append(expr)
+        print("Charles")
+        print("_t"+str(len(temp_vars)-1) + "=" + vals1 + expr[1] + vals2+";")
         TAC.append(["_t"+str(len(temp_vars)-1) + "=" + vals1 + expr[1] + vals2+";"])
         return "_t"+str(len(temp_vars)-1)
 
-    elif len(expr)==3:
+    elif len(expr)==3 or len(expr)==2:
         temp = []
         temp_vars.append(expr)
+        print("Leclerc")
+        print("_t"+str(len(temp_vars)-1)+" = ")
         temp.append("_t"+str(len(temp_vars)-1)+" = ")
         for item in expr:
             temp[0] = temp[0] + item
         temp[0] = temp[0] + ";"
+        print(temp)
         TAC.append(temp)
         return "_t"+str(len(temp_vars)-1)
 
@@ -1512,7 +1522,9 @@ def cgen(expr,symbol_table,temp_vars,TAC):
         TAC.append(["_t"+str(len(temp_vars)-1)+" = " + expr[0]+";"])
         return "_t"+str(len(temp_vars)-1)
     else:
-        return 
+        return
+
+ 
 def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
     print("Inside the temp")
     if len(expr) >= 5:
@@ -1524,7 +1536,7 @@ def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
         print(temp_vars)
         return "_t"+str(len(temp_vars)-1),TAC,len(temp_vars),temp_vars
 
-    elif len(expr)==3:
+    elif len(expr)==3 or len(expr)==2:
         temp = []
         temp_vars.append(expr)
         temp.append("_t"+str(len(temp_vars)-1)+" = ")
@@ -1538,12 +1550,18 @@ def cgen_aux(expr,symbol_table,temp_vars,TAC,first_call = True):
         print("In the weird case")
         temp_vars.append(expr[0])
         TAC.append(["_t"+str(len(temp_vars)-1)+" = " + expr[0]+";"])
+        print("_t"+str(len(temp_vars)-1))
+        print(TAC)
+        print(len(temp_vars))
+        print(temp_vars)
         return "_t"+str(len(temp_vars)-1),TAC,len(temp_vars),temp_vars
     else:
+        print("What")
         return 
 #Take out semi colons and brackets
 def clean(list):
-    list.pop()
+    if list[-1] == ";":
+        list.pop()
     list = [s for s in list if s != "(" and s != ")"]
     return list
 #Determine where we are:
@@ -1560,6 +1578,143 @@ def get_ancestors(statement,node):
         if item.name == statement:
             return item
     return None
+def handle_func_call(expr,symbol_table,temp_vars,TAC,functions):
+    """
+    we may need to check if an expression is either a simpel x or a x +2(Expr) or an x = 1 == expr()
+    if we have expr we call that and have that pushed onto the stack
+    this will then go through each argument push it on the stack, call the function, pop off the stack
+    """
+    def find_func(func, expr):
+        cnt =0
+        for line in expr:
+            if line == func[0]:
+                return cnt
+            cnt  = cnt +1
+    def get_function(functions, expr):
+        for func in functions:
+            if func[0] == expr:
+                return func
+        return None
+    print("Schumi")
+    print(expr)
+    print(temp_vars)
+    print(symbol_table)
+    print(TAC)
+    print(functions)
+    for func in functions:
+        if func[0] not in expr:
+            continue
+        if func[4] == 0:
+            temp_vars.append(expr)
+            TAC.append(["_t"+str(len(temp_vars)-1)+" = Lcall "+func[0]+";"])
+            temp = find_func(func,expr)
+            expr[temp] = "_t"+str(len(temp_vars)-1)
+            expr.pop(temp+1)
+            expr.pop(temp+1)
+        else:
+            print("Big function ")
+            numOfArgs= 0
+            pushes = []
+            print("vettel")
+            print(func)
+            print(expr)
+            temp = find_func(func,expr) + 2
+            current_arg = []
+            bracket_count = 1
+            print("Albon")
+            while numOfArgs != func[4]:
+                print(expr[temp])
+                if expr[temp] =='(':
+                    bracket_count = bracket_count +1
+                    current_arg.append(expr[temp])
+                elif expr[temp] == ',' and bracket_count ==1 :
+                    numOfArgs = numOfArgs +1
+                    pushes.append(current_arg)
+                    current_arg = []
+                elif expr[temp] == ',' and bracket_count !=1:
+                    current_arg.append(expr[temp])
+                elif expr[temp] ==')' and bracket_count != 1:
+                    bracket_count = bracket_count -1
+                    current_arg.append(expr[temp])
+                elif expr[temp] ==')' and bracket_count == 1:
+                    numOfArgs = numOfArgs +1
+                    pushes.append(current_arg)
+                    current_arg = []
+                    break
+                else:
+                    current_arg.append(expr[temp])
+                temp = temp +1
+            print("Enzo")
+            print(pushes)
+            for arg in pushes:
+                print("Alesi")
+                print(arg)
+                print(functions)
+                print(expr)
+                if len(arg) < 1:
+                    continue
+                is_function = get_function(functions,arg[0])
+                if is_function != None:
+                    print("Max")
+                    placeholder,temp_vars,this_expr,temporaries = handle_func_call(arg,symbol_table,temp_vars, [],functions) 
+                else:
+                    print("Checo")
+                    print(temp_vars)
+                    print(arg)
+                    placeholder,temp_vars,this_expr,temporaries = cgen_aux(arg,symbol_table,temp_vars,[])
+                    print("russell")
+                    print(temp_vars) 
+
+                for item in temp_vars:
+                    TAC.append(item)
+                if len(arg) == 1:
+                    TAC.append (["PushParam "+ str(arg[0]) ])
+                else:
+                    TAC.append (["PushParam _t"+str(this_expr-1)])
+            print("Gilles")
+            TAC.append (["_t"+str(len(temp_vars)-1)+" = Lcall "+func[0]+";"])
+            TAC.append (["PopParam "+str(func[4]*4)])
+            print("jacques")
+            temp = find_func(func,expr)
+            print("Coulthard")
+            expr[temp] = "_t"+str(len(temp_vars)-1)
+            print("Mick")
+            print(expr)
+            numOfArgs= 0
+            numOfBrack=0
+            while numOfArgs != func[4]:
+                print(expr[temp+1])
+                print("Brack")
+                print(numOfBrack)
+                if expr[temp+1] =='(':
+                    numOfBrack = numOfBrack +1
+                    expr.pop(temp+1)
+                elif expr[temp+1] ==')' and numOfBrack != 0:
+                    numOfBrack = numOfBrack -1
+                    expr.pop(temp+1)
+                    if numOfBrack == 0:
+                        break
+                elif expr[temp+1] ==')' and numOfBrack == 0:
+                    expr.pop(temp+1)
+                    break
+                else:
+                    expr.pop(temp+1)
+            print("Senna")
+    print("Prost")
+    print(expr)
+    expr = clean(expr)
+    print("keanu")
+    print(expr)
+    if len(expr )>2:
+        print("hill")
+        if expr[1] == '=':
+            print('Hello')
+            print(expr)
+            return cgen(expr,symbol_table,temp_vars,TAC)
+    else:
+        print('Goodbye')
+        return cgen_aux(expr,symbol_table,temp_vars,TAC)
+
 def in_children(statement,node):
     children = node.children
     for item in children:
@@ -1639,8 +1794,19 @@ def intermediate_representation(symbol_table,ast):
                     protoexpression = findall(nodes, filter_=lambda node: len(node.children) <= 0)
                     for item in protoexpression:
                         expression.append(item.name)
-                    expression = clean(expression)
-                    temp_vars,this_expr,temporaries = cgen(expression,symbol_table,temps,[])
+                    functions = []
+                    for token in expression:
+                        for item in symbol_table:
+                            if item[3] == "Function" and token == item[0]:
+                                functions.append(item)
+                    if functions != []:
+                        print("Fangio")
+                        print(temps)
+                        temp_vars,this_expr,temporaries = handle_func_call(expression,symbol_table,temps,[],functions)
+                    else:
+                        expression = clean(expression)
+                        print(expression)
+                        temp_vars,this_expr,temporaries = cgen(expression,symbol_table,temps,[])
                     temps = combine(temps,temporaries)
                     expr.append(this_expr)
                     #vars = vars + temp_vars
@@ -1806,7 +1972,8 @@ def intermediate_representation(symbol_table,ast):
                         expr.append([["return ;"]])
             vars = vars + len(temps)
             tac_output(vars*4)
-
+            print("Senna")
+            print(expr)
             if len(expr)>0:
                 j = 0
                 while j < len(expr):
@@ -1814,7 +1981,10 @@ def intermediate_representation(symbol_table,ast):
                         tac_output(i[0])
                     j = j + 1
             tac_output("EndFunc;")
+            tac_output("")
             if vtable != "":
+                print("Prost")
+                print(vtable)
                 tac_output(vtable)
 
             

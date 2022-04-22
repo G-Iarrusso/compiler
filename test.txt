@@ -1,17 +1,13 @@
-int place(){
-    int x;
-
+int name(int x,int y){
     return 1;
 }
-
+int game(int b){
+    return(b);
+}
 int main(){
     int x;
     int z;
-    for(x>10;x=1){
-        x =1;
-        if(x==1){
-            z = 2;
-        }
-    }
-    return 0;
+    x = 1;
+    z = name(game(x+1),game(x+x)) + 1;
+    return(z);
 }
