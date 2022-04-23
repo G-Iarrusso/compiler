@@ -4,6 +4,10 @@ int name(int x, int y){
 int game(int b){
     return(b);
 }
+void glow(){
+    int x;
+    int y;
+}
 int main(){
     int x;
     int z;

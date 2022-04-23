@@ -1154,6 +1154,7 @@ def semantic(ast,symbol_table,old_symbol_table):
 
     def handle_func(expr_tree, target_type):
         output = False
+        found_return = 0
         print("Function")
         for pre, fill, node in RenderTree(expr_tree,style = AsciiStyle()):
                 print("%s%s" % (pre, node.name))
@@ -1161,8 +1162,11 @@ def semantic(ast,symbol_table,old_symbol_table):
             if node.name == "ReturnStmt" and node!= expr_tree:
                 print("Starting Function Check")
                 output = handle_expr(node, target_type)
+                found_return = 1
                 break
         if output:
+            return True
+        if target_type == "void" and found_return == 0:
             return True
         return False
     
