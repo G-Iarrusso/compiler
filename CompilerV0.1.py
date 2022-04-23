@@ -78,7 +78,7 @@ def lexer():
             print("")
 
 
-    with open("test.txt") as f:
+    with open("test_7.txt") as f:
         while c!="eof":
             c = f.read(1)
             if not c and current_char<n:
@@ -92,7 +92,7 @@ def lexer():
             elif c and current_char>=n:
                 buffer2[current_char - n] = c
             current_char = current_char + 1
-    code = open('test.txt')
+    code = open('test_7.txt')
     lines = code.readlines()
 
     keywords = parse("keywords.txt")
@@ -563,7 +563,7 @@ def parser(symbol_table, read_order, line_num, lines):
         root.parent = parentprime
         return True
     def PrintStmt(parentprime):
-        root = Node("PrimtStmt")
+        root = Node("PrintStmt")
         if not Terminals("Print",root):
             return False
         if not Terminals("(",root):
@@ -1939,6 +1939,31 @@ def intermediate_representation(symbol_table,ast):
                         expr.append([["return " + str(expression[0]) + ";"]])
                     else:
                         expr.append([["return ;"]])
+                    
+                if nodes.name == "PrintStmt":
+                    expression = []
+                    protoexpression = findall(nodes, filter_=lambda node: len(node.children) <= 0)
+                    for item in protoexpression:
+                        expression.append(item.name)
+                    expression = clean(expression[1:])
+                    print(expression)
+                    if expression[0][0] == '"':
+                        vars = vars + 1
+                        expr.append([["_t"+str(vars-1)+"="+expression[0]]])
+                        expr.append([["PushParam _t"+str(vars-1)]])
+                        expr.append([["LCall _PrintString"]])
+                        expr.append([["PopParams 4"]])
+                    else:
+                        vars = vars + 1
+                        expr.append([["_t"+str(vars-1)+"="+expression[0]]])
+                        expr.append([["PushParam _t"+str(vars-1)]])
+                        expr.append([["LCall _Print"]])
+                        expr.append([["PopParams 4"]])
+
+                    
+
+
+
             vars = vars + len(temps)
             tac_output(vars*4)
             if len(expr)>0:
